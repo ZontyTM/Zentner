@@ -3,6 +3,9 @@ import java.time.LocalTime;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
+import javax.sound.sampled.Line;
+import javax.sound.sampled.Mixer;
+import javax.sound.sampled.SourceDataLine;
 
 import dorkbox.systemTray.Menu;
 import dorkbox.systemTray.MenuItem;
@@ -17,6 +20,7 @@ public class Main {
 	private static int resync = 0;
 	private static int monitor = -1;
 	private static int intervalTime = 0;
+	private static Mixer.Info audio = null;
 	private static String intervalSoundFile = "pics/interval.wav";
 	private static String timerSoundFile = "pics/timer.wav";
 	private static int[] intervalNumbers = {0,1,2,5,10,15,30,60};
@@ -55,6 +59,14 @@ public class Main {
 		//play(timerSoundFile);
 		//(new Thread(() -> play(soundFile))).start();
 		
+		for(Mixer.Info info : AudioSystem.getMixerInfo()){
+	        Mixer m = AudioSystem.getMixer(info);
+            Line.Info[] lineInfos = m.getSourceLineInfo();
+	        if(lineInfos.length >= 1 && lineInfos[0].getLineClass().equals(SourceDataLine.class)){
+	        	audio = info;
+                break;
+            }
+		}
 
 		String file = "clock-bg";
 		f = new Frame(file);
@@ -300,11 +312,12 @@ public class Main {
 	
 	private static void play(String filename) {
 		try(AudioInputStream ais = AudioSystem.getAudioInputStream(ClassLoader.getSystemResource(filename))){
-			Clip clip = AudioSystem.getClip();
+			Clip clip = AudioSystem.getClip(audio);
 	        clip.open(ais);
 	        clip.start();
 	        Thread.sleep( (10000 - clip.getMicrosecondLength() / 1000) );
 	        clip.close();
+			System.out.println("test");
 		} catch (Exception exc) {
 	        exc.printStackTrace(System.out);
 		}
