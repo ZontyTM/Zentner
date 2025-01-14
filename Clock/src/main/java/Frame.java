@@ -2,6 +2,7 @@ import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.MouseInfo;
 import java.awt.Point;
@@ -27,11 +28,13 @@ public class Frame extends JWindow {
 	
 	private JPanel clockBG;
 	private JPanel timerBG;
+	private JPanel stopwatchBG;
     private BufferedImage pic = null;
     private DateTimeFormatter format = DateTimeFormatter.ofPattern("HH:mm");
     private Font f = new Font("Segoe UI Black", Font.PLAIN, 10);
     private Color ClockColor = new Color(255, 255, 255, 220);
     private Color TimerColor = new Color(255, 255, 255, 220);
+    private Color StopwatchColor = new Color(255, 255, 255, 220);
     private int clockY;
     //	private Kernel32.SYSTEM_POWER_STATUS battery;
 	
@@ -53,20 +56,20 @@ public class Frame extends JWindow {
 		} catch (IOException e1) {e1.printStackTrace();}
     	setSize(pic.getWidth(), pic.getHeight());						//FRAME SIZE
     	clockY = (pic.getHeight() + 6)/2+1;
-    	setLocation();
     	
     	timerBG = new JPanel() {
-	    	DateTimeFormatter format = DateTimeFormatter.ofPattern("HH:mm");
 			Font f = new Font("Segoe UI Black", Font.PLAIN, 10);
 	    	int y = (pic.getHeight() + 6)/2+1 + pic.getHeight();
 	    	
 	        @Override
 	        protected void paintComponent(Graphics g) {
 	        	paintClock(g);
+	        	paintStopwatch(g);
 	        	//g.clearRect(0, 0, getWidth(), getHeight());			//??
 	        	g.setColor(TimerColor);
 	        	if(Main.timer.getState() == -1) return;
-                g.drawImage(pic, 0, pic.getHeight(), null);
+	        	int height = pic.getHeight();
+                g.drawImage(pic, 0, height, null);
                 
                 g.setFont(f);
                 
@@ -81,6 +84,7 @@ public class Frame extends JWindow {
 	        @Override
 	        protected void paintComponent(Graphics g) {
 	        	paintClock(g);
+	        	paintStopwatch(g);
 	        }
 	    };
 	    
@@ -96,7 +100,7 @@ public class Frame extends JWindow {
 	protected void paintClock(Graphics g) {
 		g.setColor(ClockColor);
 		
-    	g.clearRect(0, 0, getWidth(), getHeight());
+    	//g.clearRect(0, 0, getWidth(), getHeight());
 
         g.drawImage(pic, 0, 0, null);
         
@@ -107,18 +111,41 @@ public class Frame extends JWindow {
         g.drawString(show, (getWidth()-g.getFontMetrics().stringWidth(show))/2+1, clockY);
 	}
 	
+	public void paintStopwatch(Graphics g) {
+		g.setColor(StopwatchColor);
+		
+    	//g.clearRect(0, 0, getWidth(), getHeight());
+
+    	int height = pic.getHeight();
+    	if(Main.currentTimer) height *= 2;
+        g.drawImage(pic, 0, height, null);
+        
+        g.setFont(f);
+        
+        String show = Main.stopwatch.getFormattedTime();
+
+    	int y = (pic.getHeight() + 6)/2+1 + pic.getHeight();
+    	if(Main.currentTimer) y += pic.getHeight();
+        
+        g.drawString(show, (getWidth()-g.getFontMetrics().stringWidth(show))/2+1, y);
+	}
+	
 	public void setClockColor(int r, int g, int b, int a) { ClockColor = new Color(r, g, b, a); }
 	public void setClockColor(Color color) { ClockColor = color; }
 	
 	public void setTimerColor(int r, int g, int b, int a) { TimerColor = new Color(r, g, b, a); }
 	public void setTimerColor(Color color) { TimerColor = color; }
 	
+	public void setStopwatchColor(int r, int g, int b, int a) { StopwatchColor = new Color(r, g, b, a); }
+	public void setStopwatchColor(Color color) { StopwatchColor = color; }
+	
 	public int getPicWidth() {return pic.getWidth();}
 	public int getPicHeight() {return pic.getHeight();}
 	
-	public void setLocation() {
-//		System.out.println(GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[1]);
-		Rectangle monitor = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getConfigurations()[0].getBounds();
+	public void setLocation(int position) {
+		Rectangle monitor;
+		if(position == -1 || position > GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices().length) monitor = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getConfigurations()[0].getBounds();
+		else monitor = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[position].getConfigurations()[0].getBounds();
     	setLocation(monitor.x + monitor.width - getWidth(), 0);
 	}
 	
@@ -153,11 +180,13 @@ public class Frame extends JWindow {
 
 			    setVisible(false);
 			    
+			    
 		    	while(true) {
 					Point mouse = MouseInfo.getPointerInfo().getLocation();
 					
 					if(!isIn(mouse.x, mouse.y, x, y, w, h)) break;
 					
+					Main.stopPlayTimer();
 					try { Thread.sleep(100);
 					} catch (InterruptedException e) { e.printStackTrace();}
 				}
@@ -166,6 +195,7 @@ public class Frame extends JWindow {
                 setBackground(new Color(0, 0, 0, 0));
                 
 				setVisible(true);
+				Main.redraw();
 		    }).start();
 		}
 		public void mouseExited(MouseEvent m) {

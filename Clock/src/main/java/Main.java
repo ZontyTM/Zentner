@@ -10,17 +10,24 @@ import dorkbox.systemTray.SystemTray;
 //import dorkbox.systemTray.Checkbox;
 import java.awt.Color;
 
+
 public class Main {
 	
 	private final static int RESYNC_INTERVAL = 60;
 	private static int resync = 0;
+	private static int monitor = -1;
 	private static int intervalTime = 0;
 	private static String intervalSoundFile = "pics/interval.wav";
 	private static String timerSoundFile = "pics/timer.wav";
 	private static int[] intervalNumbers = {0,1,2,5,10,15,30,60};
-	private static int[] timerNumbers = {1,2,5,10,15,20,30,60};
+	private static float[] timerNumbers = {0.5f,1,2,5,10,15,20,30,60};
 	public static Timer timer = new Timer();
+	public static Stopwatch stopwatch = new Stopwatch();
 	private static Thread timerThread;
+	public static Boolean playTimer = false;
+	public static Boolean currentTimer = false;
+	private static Thread stopwatchThread;
+	public static Boolean currentStopwatch = false;
 	private static String[] ColorNames = {
 										"White",
 										"Orange",
@@ -57,14 +64,26 @@ public class Main {
 			if(args[i].equals("-clock")) {
 				for(int j = 0; j < ColorNames.length; j++) {
 					if(args[i+1].equals(ColorNames[j])) f.setClockColor(Colors[j]);
+					else f.setClockColor(Integer.valueOf(args[i+1]), Integer.valueOf(args[i+2]), Integer.valueOf(args[i+3]), 255);
 				}
 			}
 			if(args[i].equals("-timer")) {
 				for(int j = 0; j < ColorNames.length; j++) {
 					if(args[i+1].equals(ColorNames[j])) f.setTimerColor(Colors[j]);
+					else f.setTimerColor(Integer.valueOf(args[i+1]), Integer.valueOf(args[i+2]), Integer.valueOf(args[i+3]), 255);redraw();
 				}
 			}
+			if(args[i].equals("-stopwatch")) {
+				for(int j = 0; j < ColorNames.length; j++) {
+					if(args[i+1].equals(ColorNames[j])) f.setStopwatchColor(Colors[j]);
+					else f.setStopwatchColor(Integer.valueOf(args[i+1]), Integer.valueOf(args[i+2]), Integer.valueOf(args[i+3]), 255);
+				}
+			}
+			if(args[i].equals("-monitor")) monitor = Integer.valueOf(args[i + 1]);
 		}
+		
+		f.setLocation(monitor);
+
 	    
 		(new Thread(() -> Tray(f))).start();
 		System.out.flush();
@@ -101,7 +120,6 @@ public class Main {
 		System.out.println("Syncing...");
 		System.out.flush();
 	    while(true) {
-	    	//System.out.println(LocalTime.now().getSecond());
 	    	
 	    	if(LocalTime.now().getSecond() == 0) break;
 	    	
@@ -127,13 +145,31 @@ public class Main {
         });
         mainMenu.add(mResync);
         
-        MenuItem update = new MenuItem("Reload Position", e->{
-        	f.setLocation();
+        MenuItem update = new MenuItem("Switch Position", e->{
+        	if(monitor == 0 || monitor == -1) { monitor = 1; f.setLocation(monitor); }
+        	else { monitor = 0; f.setLocation(monitor); }
         });
         mainMenu.add(update);
+
+        Menu ColorMenu = new Menu("Adjust Colors");
+        
+        Menu TimerColor = new Menu("Timer");
+        
+        Menu ClockColor = new Menu("Clock");
+        
+        for(int i = 0; i < Colors.length; i++) {
+        	Color j = Colors[i];
+        	ClockColor.add(new MenuItem(ColorNames[i], e -> { f.setClockColor(j); redraw(); }));
+        	TimerColor.add(new MenuItem(ColorNames[i], e -> { f.setTimerColor(j); redraw(); }));
+        }
+        
+        ColorMenu.add(TimerColor);
+        
+        ColorMenu.add(ClockColor);
+        
+        mainMenu.add(ColorMenu);
         
         MenuItem exit = new MenuItem("Exit", e->{
-			System.out.println(timer.getState() + ", " + timer.getTime());
         	System.exit(0);
         });
 
@@ -141,14 +177,35 @@ public class Main {
 
         for(int i : intervalNumbers){
 			if(i == 0){
-				intervallMenu.add(new MenuItem("off", e -> { intervalTime = i; /*System.out.println("Interval off");*/ }));
+				intervallMenu.add(new MenuItem("off", e -> { intervalTime = i; }));
 			} else{
-				intervallMenu.add(new MenuItem(i + " min", e -> { intervalTime = i; /*System.out.println("Interval " + j);*/ }));
+				intervallMenu.add(new MenuItem(i + " min", e -> { intervalTime = i; }));
 			}
 		}
         
         mainMenu.add(intervallMenu);
 
+       
+        
+     
+        
+        
+        Menu stopwatchToggles = new Menu("Toggle/Stop Stopwatch");
+        Menu stopwatchMenu = new Menu("Stopwatch");
+
+        MenuItem stopwatchPause = new MenuItem("Toggle Stopwatch", e -> {
+        	if(stopwatch.getState() == 1) timer.pause();
+        	else stopwatch.resume();
+        });
+        MenuItem stopwatchStop = new MenuItem("Stop Stopwatch", e -> {
+        	stopwatch.stop();
+        	mainMenu.remove(stopwatchToggles);
+        	mainMenu.add(stopwatchMenu);
+        	redraw();
+        	currentStopwatch = false;
+        });
+        
+        
         Menu timerToggles = new Menu("Toggle/Stop Timer");
         
         MenuItem timerPause = new MenuItem("Toggle Timer", e -> {
@@ -159,61 +216,86 @@ public class Main {
         	timer.stop();
         	mainMenu.remove(timerToggles);
         	redraw();
+        	currentTimer = false;
         });
         
         Menu timerMenu = new Menu("Set Timer");
         
         
         
-        for(int i : timerNumbers){
-			timerMenu.add(new MenuItem(i + " min", e -> {
-				System.out.println(timer.getState() + ", " + timer.getTime());
+        for(float i : timerNumbers){
+        	String name = (i < 1) ? (int)(60*i) + " sec" : (int)i + " min";
+        	timerMenu.add(new MenuItem(name, e -> {
 				if(timer.getTime() == -1) {
-					timer.addTime(i*60);
+					currentTimer = true;
+					timer.addTime((int)(i*60));
 					timerThread = new Thread(() -> {
 						mainMenu.remove(exit);
 						mainMenu.add(timerToggles);
 						timerToggles.add(timerPause);
 						timerToggles.add(timerStop);
 						mainMenu.add(exit);
-						f.setSize(f.getPicWidth(), f.getPicHeight()*2);
+						if(currentStopwatch) f.setSize(f.getPicWidth(), f.getPicHeight()*3);
+		        		else f.setSize(f.getPicWidth(), f.getPicHeight()*2);
 						timer.startTimer();
-						f.setSize(f.getPicWidth(), f.getPicHeight());
 						mainMenu.remove(timerToggles);
 						if(timer.getState() == 1) {
-							play(timerSoundFile);
+							playTimer = true;
+							while(playTimer) play(timerSoundFile);
 							timer.stop();
 						}
+						if(currentStopwatch) f.setSize(f.getPicWidth(), f.getPicHeight()*2);
+		        		else f.setSize(f.getPicWidth(), f.getPicHeight());
+						currentTimer = false;
 					});
 					timerThread.start();
-					System.out.println("new Timer started");
-				} else timer.addTime(i*60);
-				System.out.println(timer.getState() + ", " + timer.getTime() + "," + timerThread.isAlive());
+				} else timer.addTime((int)(i*60));
 			}));
 		}
+        
+        
+        MenuItem stopwatchStart = new MenuItem("Start Stopwatch", e -> {
+        	stopwatchThread = new Thread(() -> {
+        		currentStopwatch = true;
+        		mainMenu.remove(exit);
+        		if(timer.getState() == -1) mainMenu.remove(timerMenu);
+        		else mainMenu.remove(timerToggles);
+        		mainMenu.remove(stopwatchMenu);
+        		mainMenu.add(stopwatchToggles);
+        		stopwatchToggles.add(stopwatchPause);
+        		stopwatchToggles.add(stopwatchStop);
+        		if(timer.getState() == -1) mainMenu.add(timerMenu);
+        		else mainMenu.add(timerToggles);
+        		mainMenu.add(exit);
+        		if(currentTimer) f.setSize(f.getPicWidth(), f.getPicHeight()*3);
+        		else f.setSize(f.getPicWidth(), f.getPicHeight()*2);
+        		stopwatch.startStopwatch();
+        		if(currentTimer) f.setSize(f.getPicWidth(), f.getPicHeight()*2);
+        		else f.setSize(f.getPicWidth(), f.getPicHeight());
+        		mainMenu.remove(exit);
+        		if(timer.getState() == -1) mainMenu.remove(timerMenu);
+        		else mainMenu.remove(timerToggles);
+        		mainMenu.remove(stopwatchToggles);
+        		mainMenu.add(stopwatchMenu);
+        		if(timer.getState() == -1) mainMenu.add(timerMenu);
+        		else mainMenu.add(timerToggles);
+        		mainMenu.add(exit);
+        		currentStopwatch = false;
+        	});
+        	stopwatchThread.start();
+        });
+        
+        mainMenu.add(stopwatchMenu);
+        
+        stopwatchMenu.add(stopwatchStart);
+
         mainMenu.add(timerMenu);
-        
-        Menu ColorMenu = new Menu("Adjust Colors");
-        
-        Menu TimerColor = new Menu("Timer");
-        
-        Menu ClockColor = new Menu("Clock");
-        
-        for(int i = 0; i < Colors.length; i++) {
-        	Color j = Colors[i];
-        	ClockColor.add(new MenuItem(ColorNames[i], e -> f.setClockColor(j)));
-        	TimerColor.add(new MenuItem(ColorNames[i], e -> f.setTimerColor(j)));
-        }
-        
-        ColorMenu.add(TimerColor);
-        
-        ColorMenu.add(ClockColor);
-        
-        mainMenu.add(ColorMenu);
-        
-        
+
         mainMenu.add(exit);
         
+        
+        System.out.println("Tray Done");
+        (new Thread(() -> play(intervalSoundFile))).start();
 	}
 	
 	private static void play(String filename) {
@@ -221,10 +303,14 @@ public class Main {
 			Clip clip = AudioSystem.getClip();
 	        clip.open(ais);
 	        clip.start();
-	        Thread.sleep( 5 * clip.getMicrosecondLength() / 1000 );
+	        Thread.sleep( (10000 - clip.getMicrosecondLength() / 1000) );
 	        clip.close();
 		} catch (Exception exc) {
 	        exc.printStackTrace(System.out);
 		}
 	}
+	
+	public static void stopPlayTimer() { playTimer = false; }
+	
+	public static int getMonitor() { return monitor; }
 }
