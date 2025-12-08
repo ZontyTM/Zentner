@@ -9,6 +9,7 @@ public class Stopwatch {
 	
 	public String getFormattedTime() {
 		if(seconds >= 3600) return (String.format("%02d:%02d", seconds / 3600, (int)((seconds % 3600) / 60)));
+		else if(seconds == 0 || seconds == -1) return "00:00";
 		else return (String.format("%02d:%02d", (seconds % 3600) / 60, (seconds % 60)));
 	}
 	
@@ -18,9 +19,9 @@ public class Stopwatch {
 	public void pause() { toggled = 0; }
 	public void stop() { toggled = -1; }
 	
-	public void startStopwatch() {
+	public void startStopwatch(int secs) {
 		toggled = 1;
-		
+		seconds += secs;
 		while(toggled > -1) {
 			while(toggled == 0) {
 				try { Thread.sleep(1000); }

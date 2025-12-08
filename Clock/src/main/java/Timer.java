@@ -1,5 +1,4 @@
 
-
 public class Timer {
 	private int seconds = -1;
 	private int toggled = -1;
