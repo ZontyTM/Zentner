@@ -1,4 +1,5 @@
 
+
 public class Timer {
 	private int seconds = -1;
 	private int toggled = -1;
@@ -16,11 +17,10 @@ public class Timer {
 
 	public void resume() { toggled = 1; }
 	public void pause() { toggled = 0; }
-	public void stop() { toggled = -1; Main.saveFile(); }
+	public void stop() { toggled = -1; }
 	
 	
 	public void startTimer() {
-		Main.saveFile();
 		toggled = 1;
 		Main.currentTimer = true;
 		
@@ -38,6 +38,5 @@ public class Timer {
 		if(toggled != 1) { Thread.currentThread().interrupt(); }
 		seconds = -1;
 		Main.redraw();
-		Main.saveFile();
 	}
 }

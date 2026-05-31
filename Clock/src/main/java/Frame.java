@@ -13,7 +13,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.lang.management.MonitorInfo;
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalTime;
 import java.time.Duration;
@@ -30,23 +29,17 @@ public class Frame extends JWindow {
 	private JPanel clockBG;
 	private JPanel timerBG;
 	private JPanel stopwatchBG;
-	private JPanel alarmBG;
     private BufferedImage pic = null;
     private DateTimeFormatter format = DateTimeFormatter.ofPattern("HH:mm");
+    private Font f = new Font("Segoe UI Black", Font.PLAIN, 10);
     private Color ClockColor = new Color(255, 255, 255, 220);
     private Color TimerColor = new Color(255, 255, 255, 220);
     private Color StopwatchColor = new Color(255, 255, 255, 220);
-    private Color AlarmColor = new Color(255, 255, 255, 220);
     private int clockY;
-    public String fontName; //Segoe UI Black
-    public int fontSize; //10
-    public int verticalOffset = 0;
-    private Font f = new Font(fontName, Font.PLAIN, fontSize);
     //	private Kernel32.SYSTEM_POWER_STATUS battery;
 	
 	public Frame(String file) {
 	    //super("Clock");
-		System.out.println(file);
 	    setType(Type.POPUP);
 		addMouseListener(new MouseHandler());
 	    setAlwaysOnTop(true);
@@ -54,10 +47,6 @@ public class Frame extends JWindow {
 	    setFocusable(false);
 	    setFocusableWindowState(false);
 	    setBackground(new Color(0,0,0,0));
-	    if(fontSize == 0) fontSize = 14;
-	    if(fontName == null) fontName = "Segoe UI Black";
-	    f = new Font(fontName, Font.PLAIN, fontSize);
-	    
 	    
 	    /*battery = new Kernel32.SYSTEM_POWER_STATUS();
 		if(!battery.hasBattery()) battery = null;
@@ -65,18 +54,17 @@ public class Frame extends JWindow {
 	    
 	    try { pic = ImageIO.read(ClassLoader.getSystemResourceAsStream("pics/" + file + ".png"));
 		} catch (IOException e1) {e1.printStackTrace();}
-	    setFrameSize();								//FRAME SIZE
-    	clockY = (pic.getHeight() + 6)/2+2;
-    	//System.out.println(getWidth() + ", " + getHeight());
+    	setSize(pic.getWidth(), pic.getHeight());						//FRAME SIZE
+    	clockY = (pic.getHeight() + 6)/2+1;
+    	
     	timerBG = new JPanel() {
-			//Font f = new Font("Segoe UI Black", Font.PLAIN, 10);
-	    	int y = (pic.getHeight() + 6)/2+2 + pic.getHeight();
+			Font f = new Font("Segoe UI Black", Font.PLAIN, 10);
+	    	int y = (pic.getHeight() + 6)/2+1 + pic.getHeight();
 	    	
 	        @Override
 	        protected void paintComponent(Graphics g) {
 	        	paintClock(g);
 	        	paintStopwatch(g);
-	        	paintAlarm(g);
 	        	//g.clearRect(0, 0, getWidth(), getHeight());			//??
 	        	g.setColor(TimerColor);
 	        	if(Main.timer.getState() == -1) return;
@@ -97,7 +85,6 @@ public class Frame extends JWindow {
 	        protected void paintComponent(Graphics g) {
 	        	paintClock(g);
 	        	paintStopwatch(g);
-	        	paintAlarm(g);
 	        }
 	    };
 	    
@@ -111,7 +98,6 @@ public class Frame extends JWindow {
 	}
 	
 	protected void paintClock(Graphics g) {
-		f = new Font(fontName, Font.PLAIN, fontSize);
 		g.setColor(ClockColor);
 		
     	//g.clearRect(0, 0, getWidth(), getHeight());
@@ -127,42 +113,19 @@ public class Frame extends JWindow {
 	
 	public void paintStopwatch(Graphics g) {
 		g.setColor(StopwatchColor);
-		int height = pic.getHeight();
-		if(Main.currentStopwatch) {
-			
-	    	//g.clearRect(0, 0, getWidth(), getHeight());
-	
-	    	if(Main.currentTimer) height *= 2;
-	        g.drawImage(pic, 0, height, null);
-	        
-	        g.setFont(f);
-	        
-	        String show = Main.stopwatch.getFormattedTime();
-	
-	    	int y = (pic.getHeight() + 6)/2+2 + pic.getHeight();
-	    	if(Main.currentTimer) y += pic.getHeight();
-	        
-	        g.drawString(show, (getWidth()-g.getFontMetrics().stringWidth(show))/2+1, y);
-        }
-	}
-	
-	public void paintAlarm(Graphics g) {
-		g.setColor(AlarmColor);
 		
     	//g.clearRect(0, 0, getWidth(), getHeight());
 
     	int height = pic.getHeight();
-    	if(Main.currentStopwatch && Main.currentTimer) height *= 3;
-    	else if(Main.currentTimer || Main.currentStopwatch) height *= 2;
+    	if(Main.currentTimer) height *= 2;
         g.drawImage(pic, 0, height, null);
         
         g.setFont(f);
         
-        String show = String.format("%02d:%02d", (Main.alarmHour), (Main.alarmMinute));
+        String show = Main.stopwatch.getFormattedTime();
 
-    	int y = (pic.getHeight() + 6)/2+2 + pic.getHeight();
+    	int y = (pic.getHeight() + 6)/2+1 + pic.getHeight();
     	if(Main.currentTimer) y += pic.getHeight();
-    	if(Main.currentStopwatch) y += pic.getHeight();
         
         g.drawString(show, (getWidth()-g.getFontMetrics().stringWidth(show))/2+1, y);
 	}
@@ -176,28 +139,14 @@ public class Frame extends JWindow {
 	public void setStopwatchColor(int r, int g, int b, int a) { StopwatchColor = new Color(r, g, b, a); }
 	public void setStopwatchColor(Color color) { StopwatchColor = color; }
 	
-	public void setAlarmColor(int r, int g, int b, int a) { AlarmColor = new Color(r, g, b, a); }
-	public void setAlarmColor(Color color) { AlarmColor = color; }
-	
 	public int getPicWidth() {return pic.getWidth();}
 	public int getPicHeight() {return pic.getHeight();}
-	
-	public void setFrameSize() {
-		int height = pic.getHeight();
-		
-		if(Main.currentStopwatch) height += pic.getHeight();
-		if(Main.currentTimer) height += pic.getHeight();
-		if(Main.alarmHour != -1) height += pic.getHeight();
-		
-		setSize(pic.getWidth(), height);
-	}
 	
 	public void setLocation(int position) {
 		Rectangle monitor;
 		if(position == -1 || position > GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices().length) monitor = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getConfigurations()[0].getBounds();
 		else monitor = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[position].getConfigurations()[0].getBounds();
-    	setLocation(monitor.x + monitor.width - getWidth(), verticalOffset);
-    	System.out.println(verticalOffset + ", bub");
+    	setLocation(monitor.x + monitor.width - getWidth(), 0);
 	}
 	
 	public void setText() {
@@ -238,7 +187,6 @@ public class Frame extends JWindow {
 					if(!isIn(mouse.x, mouse.y, x, y, w, h)) break;
 					
 					Main.stopPlayTimer();
-					Main.stopPlayAlarm();
 					try { Thread.sleep(100);
 					} catch (InterruptedException e) { e.printStackTrace();}
 				}
