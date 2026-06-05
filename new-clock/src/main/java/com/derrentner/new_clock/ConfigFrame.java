@@ -39,8 +39,6 @@ public class ConfigFrame extends JFrame
 
 	public ConfigFrame()
 	{
-		super("Configuration");
-
 		// Window settings
 		setUndecorated(true);
 		setSize(400, 200);

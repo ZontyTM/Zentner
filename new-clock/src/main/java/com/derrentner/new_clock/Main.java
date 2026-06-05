@@ -4,14 +4,24 @@ import javax.swing.SwingUtilities;
 
 import dorkbox.systemTray.*;
 
+
+
+
 public class Main
 {
+	public enum DisplayPosition
+	{
+		TopLeft,
+		TopRight
+	}
+	
 	public static ConfigFrame f;
 
 	public static void main(String[] args)
 	{
 		(new Thread(() -> tray())).start();
 		SwingUtilities.invokeLater(() -> f = new ConfigFrame());
+		ClockFrame cf = new ClockFrame(0);
 	}
 
 	private static void tray()
