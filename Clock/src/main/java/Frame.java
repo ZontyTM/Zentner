@@ -1,3 +1,4 @@
+package src.main.java;
 import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Font;

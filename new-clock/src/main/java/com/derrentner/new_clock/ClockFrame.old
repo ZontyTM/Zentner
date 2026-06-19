@@ -1,0 +1,208 @@
+package com.derrentner.new_clock;
+
+import com.sun.jna.platform.WindowUtils;
+
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.LayoutManager;
+import java.awt.MouseInfo;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.font.FontRenderContext;
+import java.awt.geom.Rectangle2D;
+import java.awt.geom.RoundRectangle2D;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+
+public class ClockFrame extends JFrame
+{
+	int 					monitorIndex 	 =  0;
+	int						textSize		 =  700;
+	String					fontName		 =  "Segoe UI Black";
+	Main.DisplayPosition 	monitorPosition  =  Main.DisplayPosition.TopRight;
+	Font					font			 =  new Font(fontName, Font.PLAIN, textSize);
+	Color					textColor		 =  new Color(227, 100, 30, 255);
+	Color					backgroundColor  =  new Color(25, 25, 25, 255);
+	private BufferedImage[] digits;
+	private BufferedImage colon;
+	private String currentTime = "11:44";
+	
+	
+	public ClockFrame(int display, Main.DisplayPosition displayPosition)
+	{
+		
+		digits = new BufferedImage[10];
+
+		try {
+		    for (int i = 0; i < 10; i++) digits[i] = ImageIO.read( getClass().getResource("/Font/" + i + ".png") );
+		    colon = ImageIO.read( getClass().getResource("/Font/colon.png") );
+		    System.out.println("Loaded Images, " + (digits[0] == null));
+		} catch (IOException e) { e.printStackTrace(); }
+		
+		
+		setLayout(null);
+		MouseAdapter hoverAdapter = new MouseAdapter() {
+
+		    @Override
+		    public void mouseEntered(MouseEvent e) {
+		    	hovered(e);
+		    }
+		};
+		
+
+		Dimension screen  =  Toolkit.getDefaultToolkit().getScreenSize();
+		FontMetrics fm = getFontMetrics(font);
+//		int screenWidth   =  screen.width;
+//		int screenHeight  =  screen.height;
+//		int padding    =  0;//Math.round(textSize / 3.5f);
+//		int width      =  fm.stringWidth("88:88") + padding * 2;
+//		int height     =  (int)(textSize - ((double)textSize/4.0f));// + padding * 2);
+		int width = getClockWidth(currentTime);
+		int height = textSize;
+		
+		
+		addMouseListener(hoverAdapter);
+		monitorIndex      =  display;
+		monitorPosition   =  displayPosition;
+		
+//		timeLabel = new JLabel("11:44");
+//		timeLabel.setLocation(0, 0);
+//		timeLabel.setSize((int)(width*1.1f), height);
+//		timeLabel.setBorder( BorderFactory.createEmptyBorder(-(int)(textSize*.065f),-(int)(textSize*0.016), 0, 0));
+		
+//		timeLabel.setHorizontalAlignment(JLabel.CENTER);
+//		timeLabel.setVerticalAlignment(JLabel.CENTER);
+//		timeLabel.setVerticalTextPosition(JLabel.TOP);
+//		timeLabel.setFont(font);
+////		timeLabel.setPreferredSize( new Dimension( fm.stringWidth("88:88") + 16, fm.getHeight() ) );
+////		System.out.println(timeLabel);
+//		timeLabel.setForeground(textColor);
+//		timeLabel.setOpaque(true);
+//		timeLabel.setBackground(backgroundColor);
+		
+//		timeLabel.setBorder( BorderFactory.createEmptyBorder(1, 1, 1, 1) );
+
+		setSize(width, height);
+		
+//		add(timeLabel);
+    	
+		// Window settings
+	    setType(Type.POPUP);
+		setUndecorated(true);
+		setAlwaysOnTop(true);
+		setFocusable(false);
+	    setFocusableWindowState(false);
+		setShape(new Rectangle2D.Double(0, 0, getWidth(), getHeight()));
+		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		
+		updatePosition(monitorIndex, monitorPosition);
+		
+		setVisible(true);
+		
+	}
+	
+	public void updatePosition( int monitorIndex, Main.DisplayPosition corner )
+	{
+	    GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+	    Rectangle bounds = screens[monitorIndex].getDefaultConfiguration().getBounds();
+	    int x, y;
+
+	    switch (corner) {
+	        case Main.DisplayPosition.TopLeft -> {
+	            x = bounds.x;
+	            y = bounds.y;
+	        }
+
+	        case Main.DisplayPosition.TopRight -> {
+	            x = bounds.x + bounds.width - getWidth();
+	            y = bounds.y;
+	        }
+	        
+	        default -> throw new IllegalStateException();
+	    }
+	    
+	    setLocation(x, y);
+	}
+	
+	public void updateDisplay (int newMonitorIndex)
+	{
+		this.monitorIndex = newMonitorIndex;
+		updatePosition(this.monitorIndex, this.monitorPosition);
+	}
+	
+	public void updateTime(String time)
+	{
+	    currentTime = time;
+	    repaint();
+	}
+	
+	public void hovered(MouseEvent m)
+	{
+	    new Thread(() -> {
+		    setVisible(false);
+		    Point mouse = MouseInfo.getPointerInfo().getLocation();
+		    Rectangle r = getBounds();
+		    
+	    	while(r.contains(mouse)) {
+				try { Thread.sleep(50); }
+				catch (InterruptedException e) { e.printStackTrace(); }
+				mouse = MouseInfo.getPointerInfo().getLocation();
+			}
+            
+			setVisible(true);
+	    }).start();
+	}
+	
+	@Override
+	public void paint(java.awt.Graphics g)
+	{
+	    super.paint(g);
+
+	    if (digits == null || colon == null) return;
+
+	    int x = 0;
+	    int y = 0;
+		double scale = (double) textSize / 150.0;
+		
+	    BufferedImage img;
+	    for (char c : currentTime.toCharArray())
+	    {
+
+	        if (c == ':') img = colon;
+	        else img = digits[c - '0'];
+
+			int drawHeight = textSize;
+			int drawWidth = (int)(img.getWidth() * scale);
+	        
+	        g.drawImage( img, x, y, drawWidth, drawHeight, null );
+	        x += drawWidth;
+	    }
+	}
+	
+	private int getClockWidth(String time)
+	{
+	    double scale = (double) textSize / digits[0].getHeight();
+
+	    int width = 0;
+	    BufferedImage img;
+	    for (char c : time.toCharArray())
+	    {
+	        img = (c == ':')  ? colon : digits[c - '0'];
+	        width += (int)(img.getWidth() * scale);
+	    }
+
+	    return width;
+	}
+}

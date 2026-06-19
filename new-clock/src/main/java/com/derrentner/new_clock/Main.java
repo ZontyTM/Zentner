@@ -2,6 +2,8 @@ package com.derrentner.new_clock;
 
 import javax.swing.SwingUtilities;
 
+import com.derrentner.new_clock.ClockFrame.ClockType;
+
 import dorkbox.systemTray.*;
 
 
@@ -16,12 +18,31 @@ public class Main
 	}
 	
 	public static ConfigFrame f;
+	public static ClockFrame[] cf;
 
 	public static void main(String[] args)
 	{
+		System.out.println(Main.class.getResource("font/0.svg"));
+		System.out.println(Main.class.getClass().getResource("pics/exit.png"));
 		(new Thread(() -> tray())).start();
-		SwingUtilities.invokeLater(() -> f = new ConfigFrame());
-		ClockFrame cf = new ClockFrame(0);
+		SwingUtilities.invokeLater(() -> cf = new ClockFrame[] { new ClockFrame(-1, null, ClockType.HourMinute)} );
+		SwingUtilities.invokeLater(() -> f = new ConfigFrame(cf));
+		
+//		try
+//		{
+//			Thread.sleep(2000);
+//		} catch (InterruptedException e)
+//		{
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		
+//		cf[0].setType(ClockType.HourMinute);
+		
+//		while(true) {
+//			
+//		}
+		
 	}
 
 	private static void tray()
@@ -29,8 +50,8 @@ public class Main
 		System.out.println("Tray started...");
 
 		SystemTray tray = SystemTray.get();
-		if (Main.class.getResource("/pics/clock.png") != null)
-			tray.setImage(Main.class.getResource("/pics/clock.png"));
+		if (Main.class.getResource("pics/clock.png") != null)
+			tray.setImage(Main.class.getResource("pics/clock.png"));
 		else
 			System.out.println("Picture not Found");
 
@@ -45,7 +66,6 @@ public class Main
 
 		MenuItem exit = new MenuItem("Exit", e -> {
 			System.out.println("Exiting...");
-			;
 			System.exit(0);
 		});
 

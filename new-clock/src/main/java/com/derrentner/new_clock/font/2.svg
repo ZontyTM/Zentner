@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="52"
+   height="74"
+   viewBox="0 0 13.758342 19.579178"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   sodipodi:docname="2.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#d6d6d6"
+     bordercolor="#999999"
+     borderopacity="1"
+     inkscape:showpageshadow="false"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="false"
+     inkscape:deskcolor="#686868"
+     inkscape:document-units="mm"
+     inkscape:antialias-rendering="true"
+     borderlayer="false"
+     showborder="false"
+     inkscape:zoom="11.313709"
+     inkscape:cx="8.7062522"
+     inkscape:cy="38.802485"
+     inkscape:window-width="2560"
+     inkscape:window-height="1412"
+     inkscape:window-x="2560"
+     inkscape:window-y="1120"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <rect
+       x="0.00390625"
+       y="0.00390625"
+       width="31.992188"
+       height="47.996094"
+       id="rect2" />
+    <rect
+       x="0.057981391"
+       y="0.057981391"
+       width="31.889765"
+       height="47.950607"
+       id="rect1" />
+    <rect
+       x="0.00390625"
+       y="0.00390625"
+       width="31.992188"
+       height="47.996094"
+       id="rect2-1" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       transform="scale(0.26458333)"
+       id="text1"
+       style="writing-mode:lr-tb;direction:ltr;white-space:pre;shape-inside:url(#rect1);display:inline;fill:#000000" />
+    <text
+       xml:space="preserve"
+       transform="matrix(1.4000943,0,0,1.3992724,-1.0545082,-4.8855388)"
+       id="text2"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18.9031px;font-family:'Noto Mono';-inkscape-font-specification:'Noto Mono, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;white-space:pre;shape-inside:url(#rect2-1);display:inline;fill:#000000"><tspan
+         x="0.00390625"
+         y="17.331747"
+         id="tspan1">2</tspan></text>
+  </g>
+</svg>

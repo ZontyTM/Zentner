@@ -13,9 +13,13 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JColorChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -25,23 +29,26 @@ import javax.swing.JTextField;
 @SuppressWarnings("serial")
 public class ConfigFrame extends JFrame
 {
-
-	private JTextField usernameField;
-	private JCheckBox darkModeCheckBox;
+	private JTextField redField;
+	private JTextField greenField;
+	private JTextField blueField;
 	private JPanel mainPanel;
 	private JPanel titleBar;
-	private Color titleBarColor = new Color(47, 47, 47);
-	private JButton saveButton;
+	private JButton applyButton;
 	private JButton themeButton;
 	private JButton closeButton;
 	private Point dragOffset;
-	private boolean darkMode = false;
+	private ClockFrame[] clocks;
+	private Color titleBarColor = new Color(47, 47, 47);
+	private boolean darkMode = true;
 
-	public ConfigFrame()
+	public ConfigFrame(ClockFrame[] clocks)
 	{
+		this.clocks = clocks;
+		
 		// Window settings
 		setUndecorated(true);
-		setSize(400, 200);
+		setSize(300, 125);
 		setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 15, 15)); // Round Edges Size
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setLocationRelativeTo(null);
@@ -83,14 +90,14 @@ public class ConfigFrame extends JFrame
 		themeButton.setOpaque(false);
 		themeButton.setMargin(new Insets(0, 0, 0, 0));
 		themeButton.setFocusPainted(false);
-		themeButton.setIcon(new ImageIcon(getClass().getResource("/pics/dark_mode.png")));
+		themeButton.setIcon(new ImageIcon(getClass().getResource("pics/dark_mode.png")));
 
 		themeButton.addActionListener(e -> {
 			darkMode = !darkMode;
 			if (darkMode)
-				themeButton.setIcon(new ImageIcon(getClass().getResource("/pics/light_mode.png")));
+				themeButton.setIcon(new ImageIcon(getClass().getResource("pics/light_mode.png")));
 			else
-				themeButton.setIcon(new ImageIcon(getClass().getResource("/pics/dark_mode.png")));
+				themeButton.setIcon(new ImageIcon(getClass().getResource("pics/dark_mode.png")));
 			applyTheme();
 		});
 
@@ -105,42 +112,76 @@ public class ConfigFrame extends JFrame
 		closeButton.setPreferredSize(new Dimension(16, 16));
 		closeButton.setFocusable(false);
 		closeButton.setOpaque(false);
-		closeButton.setIcon(new ImageIcon(getClass().getResource("/pics/exit.png")));
+		closeButton.setIcon(new ImageIcon(getClass().getResource("pics/exit.png")));
 
 		closeButton.addActionListener(e -> dispose());
 
-		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 2));
-		buttonPanel.setOpaque(true);
-		buttonPanel.setBackground(titleBarColor);
-		buttonPanel.add(themeButton);
-		buttonPanel.add(closeButton);
+		JPanel titleButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 2));
+		titleButtons.setOpaque(false);
 
-		titleBar.add(buttonPanel, BorderLayout.EAST);
+		titleButtons.add(themeButton);
+		titleButtons.add(closeButton);
+
+		titleBar.add(titleButtons, BorderLayout.EAST);
 
 		add(titleBar, BorderLayout.NORTH);
+		
+		mainPanel = new JPanel();
+		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+		mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-		// Main panel
-		mainPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+		
+		JPanel rgbPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
 
-		mainPanel.add(new JLabel("Username:"));
-		usernameField = new JTextField();
-		mainPanel.add(usernameField);
+		Color color = clocks[0].getColor();
+		
+		redField = new JTextField(String.valueOf(color.getRed()), 4);
+		styleField(redField);
 
-		mainPanel.add(new JLabel("Dark Mode:"));
-		darkModeCheckBox = new JCheckBox();
-		mainPanel.add(darkModeCheckBox);
+		greenField = new JTextField(String.valueOf(color.getGreen()), 4);
+		styleField(greenField);
 
-		saveButton = new JButton("Save");
-		mainPanel.add(new JLabel());
-		mainPanel.add(saveButton);
+		blueField = new JTextField(String.valueOf(color.getBlue()), 4);
+		styleField(blueField);
+		
+		rgbPanel.add(new JLabel("R:"));
+		rgbPanel.add(redField);
 
-		saveButton.addActionListener(e -> saveConfig());
+		rgbPanel.add(new JLabel("G:"));
+		rgbPanel.add(greenField);
+
+		rgbPanel.add(new JLabel("B:"));
+		rgbPanel.add(blueField);
+		
+
+		JPanel applyPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+		applyButton = new JButton("Apply");
+		applyButton.setPreferredSize(new Dimension(120, 28));
+		applyButton.setBackground(new Color(60, 60, 60));
+		applyButton.setForeground(Color.WHITE);
+		applyButton.setFocusPainted(false);
+		applyButton.addActionListener(e -> applyColor());
+		applyPanel.add(applyButton);
+
+		mainPanel.add(rgbPanel);
+		mainPanel.add(Box.createVerticalStrut(15));
+		mainPanel.add(applyPanel);
 
 		add(mainPanel, BorderLayout.CENTER);
+
+		mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
 		applyTheme();
 	}
 
+	private void styleField(JTextField field)
+	{
+	    field.setBorder(BorderFactory.createCompoundBorder(
+	        BorderFactory.createLineBorder(new Color(120,120,120)),
+	        BorderFactory.createEmptyBorder(2,4,2,4)
+	    ));
+	}
+	
 	private void updateComponentColors(Container container, Color background, Color foreground)
 	{
 
@@ -181,11 +222,25 @@ public class ConfigFrame extends JFrame
 		repaint();
 	}
 
-	private void saveConfig()
+	private void applyColor()
 	{
-		String username = usernameField.getText();
-		boolean darkMode = darkModeCheckBox.isSelected();
+	    try
+	    {
+	        int r = Integer.parseInt(redField.getText());
+	        int g = Integer.parseInt(greenField.getText());
+	        int b = Integer.parseInt(blueField.getText());
 
-		JOptionPane.showMessageDialog(this, "Saved!\nUsername: " + username + "\nDark Mode: " + darkMode);
+	        r = Math.max(0, Math.min(255, r));
+	        g = Math.max(0, Math.min(255, g));
+	        b = Math.max(0, Math.min(255, b));
+
+	        Color color = new Color(r, g, b);
+	        clocks[0].updateColor(color);
+
+	    }
+	    catch (NumberFormatException e)
+	    {
+	    	System.err.println(e);
+	    }
 	}
 }
