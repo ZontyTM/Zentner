@@ -23,7 +23,7 @@ public class Main
 	public static void main(String[] args)
 	{
 		System.out.println(Main.class.getResource("font/0.svg"));
-		System.out.println(Main.class.getClass().getResource("pics/exit.png"));
+		System.out.println(Main.class.getResource("pics/exit.png"));
 		(new Thread(() -> tray())).start();
 		SwingUtilities.invokeLater(() -> cf = new ClockFrame[] { new ClockFrame(-1, null, ClockType.HourMinute)} );
 		SwingUtilities.invokeLater(() -> f = new ConfigFrame(cf));
