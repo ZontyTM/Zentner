@@ -178,24 +178,26 @@ public class ClockFrame extends JFrame
     public void hovered(MouseEvent m)
 	{
 	    new Thread(() -> {
-		    setVisible(false);
-		    Point mouse = MouseInfo.getPointerInfo().getLocation();
-		    Rectangle r = getBounds();
+//		    Point mouse = MouseInfo.getPointerInfo().getLocation();
+//		    Rectangle r = getBounds();
 
-		    if(mouse == null) {
+//		    if(mouse == null) {
+		    	updatePosition(Main.DisplayPosition.TopLeft);
 		    	try { Thread.sleep(500); }
 				catch (InterruptedException e) { e.printStackTrace(); }
-		    }
-		    else
-		    {
-		    	while(r.contains(mouse)) {
-					try { Thread.sleep(50); }
-					catch (InterruptedException e) { e.printStackTrace(); }
-					mouse = MouseInfo.getPointerInfo().getLocation();
-				}
-		    }
+		    	updatePosition(Main.DisplayPosition.TopRight);
+//		    }
+//		    else
+//		    {
+//		    	setVisible(false);
+//		    	while(r.contains(mouse)) {
+//					try { Thread.sleep(50); }
+//					catch (InterruptedException e) { e.printStackTrace(); }
+//					mouse = MouseInfo.getPointerInfo().getLocation();
+//				}
+//		    }
 		    
-			setVisible(true);
+//			setVisible(true);
 	    }).start();
 	}
     
