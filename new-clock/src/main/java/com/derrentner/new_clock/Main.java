@@ -25,7 +25,7 @@ public class Main
 		System.out.println(Main.class.getResource("font/0.svg"));
 		System.out.println(Main.class.getResource("pics/exit.png"));
 		(new Thread(() -> tray())).start();
-		SwingUtilities.invokeLater(() -> cf = new ClockFrame[] { new ClockFrame(-1, null, ClockType.HourMinute)} );
+		SwingUtilities.invokeLater(() -> cf = new ClockFrame[] { new ClockFrame(-1, null, ClockType.HourMinuteSecond)} );
 		SwingUtilities.invokeLater(() -> f = new ConfigFrame(cf));
 		
 //		try

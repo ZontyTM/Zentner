@@ -58,14 +58,18 @@ public class ClockFrame extends JFrame
 //		int screenWidth   =  screen.width;
 //		int screenHeight  =  screen.height;
 		
-    	MouseAdapter hoverAdapter = new MouseAdapter() {
-
-		    @Override
-		    public void mouseEntered(MouseEvent e) {
-		    	hovered(e);
-		    }
-		};
-		addMouseListener(hoverAdapter);
+        String sessionType = System.getenv("XDG_SESSION_TYPE");
+        System.out.println("sessionType: " + sessionType);
+        
+        if(!sessionType.equals("wayland")) {
+            MouseAdapter hoverAdapter = new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    hovered(e);
+                }
+            };
+            addMouseListener(hoverAdapter);
+        }
     	if (display != -1) monitorIndex = display;
 		if (type != null) clockType = type;
 		if (position != null) displayPosition = position;

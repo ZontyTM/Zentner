@@ -24,14 +24,19 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSlider;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
+import javax.swing.event.ChangeListener;
 
 @SuppressWarnings("serial")
 public class ConfigFrame extends JFrame
 {
-	private JTextField redField;
-	private JTextField greenField;
-	private JTextField blueField;
+	private JSlider redSlider, greenSlider, blueSlider;
+	private JSlider hueSlider, satSlider, valSlider;
+	private JTabbedPane tabs;
+	private JLabel previewLabel;
+	private JPanel colorPreview;
 	private JPanel mainPanel;
 	private JPanel titleBar;
 	private JButton applyButton;
@@ -48,7 +53,7 @@ public class ConfigFrame extends JFrame
 		
 		// Window settings
 		setUndecorated(true);
-		setSize(300, 125);
+		setSize(300, 300);
 		setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 15, 15)); // Round Edges Size
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setLocationRelativeTo(null);
@@ -126,62 +131,127 @@ public class ConfigFrame extends JFrame
 
 		add(titleBar, BorderLayout.NORTH);
 		
-		mainPanel = new JPanel();
-		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-		mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		mainPanel = new JPanel(new BorderLayout(10, 10));
+		mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-		
-		JPanel rgbPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-
+		// RGB Panel
 		Color color = clocks[0].getColor();
-		
-		redField = new JTextField(String.valueOf(color.getRed()), 4);
-		styleField(redField);
 
-		greenField = new JTextField(String.valueOf(color.getGreen()), 4);
-		styleField(greenField);
+		// ===== PREVIEW =====
+		JPanel previewPanel = new JPanel(new BorderLayout());
+		previewPanel.setBackground(Color.BLACK);
+		previewPanel.setPreferredSize(new Dimension(200, 60));
 
-		blueField = new JTextField(String.valueOf(color.getBlue()), 4);
-		styleField(blueField);
-		
-		rgbPanel.add(new JLabel("R:"));
-		rgbPanel.add(redField);
+		previewLabel = new JLabel("12:34", JLabel.CENTER);
+		previewLabel.setFont(previewLabel.getFont().deriveFont(28f));
+		previewPanel.add(previewLabel, BorderLayout.CENTER);
 
-		rgbPanel.add(new JLabel("G:"));
-		rgbPanel.add(greenField);
+		// ===== TABS =====
+		tabs = new JTabbedPane();
 
-		rgbPanel.add(new JLabel("B:"));
-		rgbPanel.add(blueField);
-		
+		// RGB TAB
+		JPanel rgbPanel = new JPanel(new GridLayout(3, 1));
 
+		redSlider = createSlider(color.getRed());
+		greenSlider = createSlider(color.getGreen());
+		blueSlider = createSlider(color.getBlue());
+
+		ChangeListener rgbListener = e -> updatePreview();
+
+		redSlider.addChangeListener(rgbListener);
+		greenSlider.addChangeListener(rgbListener);
+		blueSlider.addChangeListener(rgbListener);
+
+		rgbPanel.add(labeledSlider("R", redSlider));
+		rgbPanel.add(labeledSlider("G", greenSlider));
+		rgbPanel.add(labeledSlider("B", blueSlider));
+
+		tabs.addTab("RGB", rgbPanel);
+
+		// HSV TAB
+		JPanel hsvPanel = new JPanel(new GridLayout(3, 1));
+
+		float[] hsv = Color.RGBtoHSB(color.getRed(), color.getGreen(), color.getBlue(), null);
+
+		hueSlider = new JSlider(0, 360, (int)(hsv[0] * 360));
+		satSlider = new JSlider(0, 100, (int)(hsv[1] * 100));
+		valSlider = new JSlider(0, 100, (int)(hsv[2] * 100));
+
+		ChangeListener hsvListener = e -> updatePreview();
+
+		hueSlider.addChangeListener(hsvListener);
+		satSlider.addChangeListener(hsvListener);
+		valSlider.addChangeListener(hsvListener);
+
+		hsvPanel.add(labeledSlider("H", hueSlider));
+		hsvPanel.add(labeledSlider("S", satSlider));
+		hsvPanel.add(labeledSlider("V", valSlider));
+
+		tabs.addTab("HSV", hsvPanel);
+
+		// ===== WRAP =====
+		JPanel center = new JPanel(new BorderLayout(10, 10));
+		center.add(previewPanel, BorderLayout.NORTH);
+		center.add(tabs, BorderLayout.CENTER);
+
+		mainPanel.add(center, BorderLayout.CENTER);
+
+		// Apply Button
 		JPanel applyPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+
 		applyButton = new JButton("Apply");
 		applyButton.setPreferredSize(new Dimension(120, 28));
 		applyButton.setBackground(new Color(60, 60, 60));
 		applyButton.setForeground(Color.WHITE);
 		applyButton.setFocusPainted(false);
 		applyButton.addActionListener(e -> applyColor());
+
 		applyPanel.add(applyButton);
 
-		mainPanel.add(rgbPanel);
-		mainPanel.add(Box.createVerticalStrut(15));
-		mainPanel.add(applyPanel);
+		mainPanel.add(applyPanel, BorderLayout.SOUTH);
 
+		// Rest
 		add(mainPanel, BorderLayout.CENTER);
-
-		mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
 		applyTheme();
 	}
-
-	private void styleField(JTextField field)
+	
+	private JSlider createSlider(int value)
 	{
-	    field.setBorder(BorderFactory.createCompoundBorder(
-	        BorderFactory.createLineBorder(new Color(120,120,120)),
-	        BorderFactory.createEmptyBorder(2,4,2,4)
-	    ));
+	    JSlider slider = new JSlider(0, 255, value);
+	    slider.setMajorTickSpacing(85);
+	    slider.setPaintTicks(true);
+	    slider.setPaintLabels(true);
+	    return slider;
 	}
 	
+	private void updatePreview()
+	{
+	    Color c = getCurrentColor();
+
+	    previewLabel.setForeground(c);
+
+	    // optional but HIGHLY recommended: contrast fix
+	    float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
+	    previewLabel.setBackground(hsb[2] < 0.5 ? Color.WHITE : Color.BLACK);
+	}
+	
+	private JPanel labeledSlider(String label, JSlider slider)
+	{
+	    JPanel panel = new JPanel(new BorderLayout());
+	    panel.add(new JLabel(label), BorderLayout.WEST);
+	    panel.add(slider, BorderLayout.CENTER);
+	    return panel;
+	}
+
+//	private void styleField(JTextField field)
+//	{
+//	    field.setBorder(BorderFactory.createCompoundBorder(
+//	        BorderFactory.createLineBorder(new Color(120,120,120)),
+//	        BorderFactory.createEmptyBorder(2,4,2,4)
+//	    ));
+//	}
+//	
 	private void updateComponentColors(Container container, Color background, Color foreground)
 	{
 
@@ -201,6 +271,26 @@ public class ConfigFrame extends JFrame
 		}
 	}
 
+	private Color getCurrentColor()
+	{
+	    if (tabs.getSelectedIndex() == 0)
+	    {
+	        return new Color(
+	            redSlider.getValue(),
+	            greenSlider.getValue(),
+	            blueSlider.getValue()
+	        );
+	    }
+	    else
+	    {
+	        return Color.getHSBColor(
+	            hueSlider.getValue() / 360f,
+	            satSlider.getValue() / 100f,
+	            valSlider.getValue() / 100f
+	        );
+	    }
+	}
+	
 	private void applyTheme()
 	{
 		Color background;
@@ -224,23 +314,8 @@ public class ConfigFrame extends JFrame
 
 	private void applyColor()
 	{
-	    try
-	    {
-	        int r = Integer.parseInt(redField.getText());
-	        int g = Integer.parseInt(greenField.getText());
-	        int b = Integer.parseInt(blueField.getText());
+	    Color color = getCurrentColor();
 
-	        r = Math.max(0, Math.min(255, r));
-	        g = Math.max(0, Math.min(255, g));
-	        b = Math.max(0, Math.min(255, b));
-
-	        Color color = new Color(r, g, b);
-	        clocks[0].updateColor(color);
-
-	    }
-	    catch (NumberFormatException e)
-	    {
-	    	System.err.println(e);
-	    }
+	    clocks[0].updateColor(color);
 	}
 }
