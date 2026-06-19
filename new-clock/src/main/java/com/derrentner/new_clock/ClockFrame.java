@@ -177,15 +177,19 @@ public class ClockFrame extends JFrame
     
     public void hovered(MouseEvent m)
 	{
-	    new Thread(() -> {
+    	updatePosition(Main.DisplayPosition.TopLeft);
+    	try { Thread.sleep(500); }
+		catch (InterruptedException e) { e.printStackTrace(); }
+    	updatePosition(Main.DisplayPosition.TopRight);
+//	    new Thread(() -> {
 //		    Point mouse = MouseInfo.getPointerInfo().getLocation();
 //		    Rectangle r = getBounds();
-
+//
 //		    if(mouse == null) {
-		    	updatePosition(Main.DisplayPosition.TopLeft);
-		    	try { Thread.sleep(500); }
-				catch (InterruptedException e) { e.printStackTrace(); }
-		    	updatePosition(Main.DisplayPosition.TopRight);
+//		    	updatePosition(Main.DisplayPosition.TopLeft);
+//		    	try { Thread.sleep(500); }
+//				catch (InterruptedException e) { e.printStackTrace(); }
+//		    	updatePosition(Main.DisplayPosition.TopRight);
 //		    }
 //		    else
 //		    {
@@ -196,9 +200,9 @@ public class ClockFrame extends JFrame
 //					mouse = MouseInfo.getPointerInfo().getLocation();
 //				}
 //		    }
-		    
+//		    
 //			setVisible(true);
-	    }).start();
+//	    }).start();
 	}
     
     private void loadImages()
