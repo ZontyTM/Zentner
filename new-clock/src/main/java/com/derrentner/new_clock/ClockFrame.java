@@ -26,6 +26,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 
 @SuppressWarnings("serial")
 public class ClockFrame extends JFrame
@@ -50,7 +51,9 @@ public class ClockFrame extends JFrame
     private int recHeight = digitHeight + Math.max((int)(digitHeight * 0.25),  2 * padding);
     private ClockType clockType = ClockType.HourMinute;
     private Main.DisplayPosition displayPosition = Main.DisplayPosition.TopRight;
-    private Color color = Color.white;//new Color(227, 100, 30, 255);
+    private Color color = new Color(255, 140, 50, 255);
+    private ScheduledExecutorService executor;
+    private volatile ScheduledFuture<?> scheduleHandle;
 
     public ClockFrame(int display, Main.DisplayPosition position, ClockType type)
     {
@@ -91,50 +94,49 @@ public class ClockFrame extends JFrame
         updateColor(color);
         clockPanel.repaint();
         
-        if(clockType == ClockType.HourMinute)
-        {
-        	int initialDelay = 60 - LocalTime.now().getSecond();
-	    	ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-	    	
-	        executor.scheduleAtFixedRate(() ->
-	        {
-	        	SwingUtilities.invokeLater(() ->
-	            {
-	                updateTime(LocalTime.now().plus(timeShift));
-	                clockPanel.repaint();
-	            });
-	        }, initialDelay, 60, TimeUnit.SECONDS);
-        }
-//	        new Thread(() ->
-//	        {
-//	            while (true)
-//	            {
-//	                try { Thread.sleep(Duration.ofSeconds(60 - LocalTime.now().getSecond())); }
-//	                catch (InterruptedException ignored) {}
-//	
-//	                updateTime(LocalTime.now().plus(timeShift));
-//	                repaint();
-//	            }
-//	        }).start();
-        else
-        {
-	    	long initialDelay = 1000 - (System.currentTimeMillis() % 1000);
-	    	ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-	    	
-	        executor.scheduleAtFixedRate(() ->
-	        {
-	        	SwingUtilities.invokeLater(() ->
-	            {
-	                updateTime(LocalTime.now().plus(timeShift));
-	                clockPanel.repaint();
-	            });
-	        }, initialDelay, 1000, TimeUnit.MILLISECONDS);
-        }
+        startScheduler();
         
         clockPanel.setOpaque(true);
         clockPanel.setBackground(Color.BLACK);
 
         setContentPane(clockPanel);
+    }
+    
+    private void startScheduler() {
+
+        if (executor != null) {
+            executor.shutdownNow();
+        }
+
+        executor = Executors.newSingleThreadScheduledExecutor();
+
+        Runnable task = () -> SwingUtilities.invokeLater(() -> {
+            updateTime();
+            clockPanel.repaint();
+        });
+
+        if (clockType == ClockType.HourMinute) {
+
+            int initialDelay = 60 - LocalTime.now().getSecond();
+
+            scheduleHandle = executor.scheduleAtFixedRate(
+                    task,
+                    initialDelay,
+                    60,
+                    TimeUnit.SECONDS
+            );
+
+        } else {
+
+            long initialDelay = 1000 - (System.currentTimeMillis() % 1000);
+
+            scheduleHandle = executor.scheduleAtFixedRate(
+                    task,
+                    initialDelay,
+                    1000,
+                    TimeUnit.MILLISECONDS
+            );
+        }
     }
     
     private final JPanel clockPanel = new JPanel()
@@ -181,32 +183,20 @@ public class ClockFrame extends JFrame
     
     public void hovered(MouseEvent m)
 	{
-    	updatePosition(Main.DisplayPosition.TopLeft);
-    	try { Thread.sleep(500); }
-		catch (InterruptedException e) { e.printStackTrace(); }
-    	updatePosition(Main.DisplayPosition.TopRight);
-//	    new Thread(() -> {
-//		    Point mouse = MouseInfo.getPointerInfo().getLocation();
-//		    Rectangle r = getBounds();
-//
-//		    if(mouse == null) {
-//		    	updatePosition(Main.DisplayPosition.TopLeft);
-//		    	try { Thread.sleep(500); }
-//				catch (InterruptedException e) { e.printStackTrace(); }
-//		    	updatePosition(Main.DisplayPosition.TopRight);
-//		    }
-//		    else
-//		    {
-//		    	setVisible(false);
-//		    	while(r.contains(mouse)) {
-//					try { Thread.sleep(50); }
-//					catch (InterruptedException e) { e.printStackTrace(); }
-//					mouse = MouseInfo.getPointerInfo().getLocation();
-//				}
-//		    }
-//		    
-//			setVisible(true);
-//	    }).start();
+
+	    new Thread(() -> {
+		    Point mouse = MouseInfo.getPointerInfo().getLocation();
+		    Rectangle r = getBounds();
+		    
+	    	setVisible(false);
+	    	while(r.contains(mouse)) {
+				try { Thread.sleep(50); }
+				catch (InterruptedException e) { e.printStackTrace(); }
+				mouse = MouseInfo.getPointerInfo().getLocation();
+			}
+		    
+			setVisible(true);
+	    }).start();
 	}
     
     private void loadImages()
@@ -294,6 +284,9 @@ public class ClockFrame extends JFrame
     {
     	clockType = type;
     	updatePosition(displayPosition);
+    	startScheduler();
+    	updateTime();
+    	repaint();
     }
     
     public void updatePosition(Main.DisplayPosition monitorPosition)
@@ -306,6 +299,9 @@ public class ClockFrame extends JFrame
 	    if(clockType == ClockType.HourMinuteSecond) recWitdth += (int)(2.5f * digitWidth + 3 * textPadding);
 	    setSize(recWitdth, recHeight);
 
+	    if(monitorPosition == null) monitorPosition = displayPosition;
+	    else displayPosition = monitorPosition;
+	    
 	    switch (monitorPosition) {
 	        case TopLeft -> {
 	            x = bounds.x;
@@ -333,9 +329,20 @@ public class ClockFrame extends JFrame
     	clockPanel.repaint();
     }
     
-    public synchronized void updateTime(LocalTime t)
+    public synchronized void updateTime()
     {
-    	time = t;
+    	time = LocalTime.now().plus(timeShift);
     }
-	
+
+    public void changeTextSize(int newSize)
+    {
+        digitHeight = newSize;
+        digitWidth = imgWidth * digitHeight / imgHeight;
+
+        loadImages();
+        updateColor(color);
+
+        updatePosition(null);
+        clockPanel.repaint();
+    }
 }

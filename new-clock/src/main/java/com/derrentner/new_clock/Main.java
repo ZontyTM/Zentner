@@ -22,34 +22,27 @@ public class Main
 
 	public static void main(String[] args)
 	{
+		SystemTray.DEBUG = true;
 		System.out.println(Main.class.getResource("font/0.svg"));
 		System.out.println(Main.class.getResource("pics/exit.png"));
 		(new Thread(() -> tray())).start();
-		SwingUtilities.invokeLater(() -> cf = new ClockFrame[] { new ClockFrame(-1, null, ClockType.HourMinuteSecond)} );
-		SwingUtilities.invokeLater(() -> f = new ConfigFrame(cf));
-		
-//		try
-//		{
-//			Thread.sleep(2000);
-//		} catch (InterruptedException e)
-//		{
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		
-//		cf[0].setType(ClockType.HourMinute);
-		
-//		while(true) {
-//			
-//		}
-		
+		SwingUtilities.invokeLater(() -> cf = new ClockFrame[] { new ClockFrame(-1, null, ClockType.HourMinute)} );
+		SwingUtilities.invokeLater(() -> f = new ConfigFrame(cf));		
 	}
 
 	private static void tray()
 	{
+		SystemTray tray = SystemTray.get();
+
+		System.out.println("tray = " + tray);
+
+		if (tray == null) {
+		    System.out.println("SystemTray initialization failed");
+		    return;
+		}
 		System.out.println("Tray started...");
 
-		SystemTray tray = SystemTray.get();
+//		SystemTray tray = SystemTray.get();
 		if (Main.class.getResource("pics/clock.png") != null)
 			tray.setImage(Main.class.getResource("pics/clock.png"));
 		else

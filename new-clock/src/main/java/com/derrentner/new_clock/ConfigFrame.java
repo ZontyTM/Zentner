@@ -27,6 +27,7 @@ import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
+import javax.swing.UIManager;
 import javax.swing.event.ChangeListener;
 
 @SuppressWarnings("serial")
@@ -35,13 +36,16 @@ public class ConfigFrame extends JFrame
 	private JSlider redSlider, greenSlider, blueSlider;
 	private JSlider hueSlider, satSlider, valSlider;
 	private JTabbedPane tabs;
+	private JTextField sizeField;
 	private JLabel previewLabel;
-	private JPanel colorPreview;
 	private JPanel mainPanel;
 	private JPanel titleBar;
+	private JButton increaseButton;
+	private JButton decreaseButton;
 	private JButton applyButton;
 	private JButton themeButton;
 	private JButton closeButton;
+	private JCheckBox secondsCheckBox;
 	private Point dragOffset;
 	private ClockFrame[] clocks;
 	private Color titleBarColor = new Color(47, 47, 47);
@@ -53,7 +57,7 @@ public class ConfigFrame extends JFrame
 		
 		// Window settings
 		setUndecorated(true);
-		setSize(300, 300);
+		setSize(400, 400);
 		setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 15, 15)); // Round Edges Size
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setLocationRelativeTo(null);
@@ -146,11 +150,87 @@ public class ConfigFrame extends JFrame
 		previewLabel.setFont(previewLabel.getFont().deriveFont(28f));
 		previewPanel.add(previewLabel, BorderLayout.CENTER);
 
+		// ===== SECONDS CHECKBOX =====
+		secondsCheckBox = new JCheckBox("Show Seconds");
+		secondsCheckBox.setFocusPainted(false);
+		
+		secondsCheckBox.addActionListener(e ->
+		{
+		    if (secondsCheckBox.isSelected())
+		    {
+		        previewLabel.setText("12:34:56");
+		    }
+		    else
+		    {
+		        previewLabel.setText("12:34");
+		    }
+		});
+		
+		// ===== TextSizeField ======
+		JPanel sizePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+
+		decreaseButton = new JButton("-");
+		sizeField = new JTextField("10", 3); // default size
+		increaseButton = new JButton("+");
+
+		Dimension btnSize = new Dimension(45, 25);
+		decreaseButton.setPreferredSize(btnSize);
+		decreaseButton.setFocusable(false);
+		increaseButton.setPreferredSize(btnSize);
+		increaseButton.setFocusable(false);
+		
+		sizePanel.add(decreaseButton);
+		sizePanel.add(sizeField);
+		sizePanel.add(increaseButton);
+		
+		// ==== Decrease/Increase Button ====
+		decreaseButton.addActionListener(e -> {
+		    try {
+		        int size = Integer.parseInt(sizeField.getText());
+
+		        if (size > 1) {
+		            size--;
+		            sizeField.setText(String.valueOf(size));
+		        }
+		    }
+		    catch (NumberFormatException ignored) {}
+		});
+
+		increaseButton.addActionListener(e -> {
+		    try {
+		        int size = Integer.parseInt(sizeField.getText());
+
+		        size++;
+		        sizeField.setText(String.valueOf(size));
+		    }
+		    catch (NumberFormatException ignored) {}
+		});
+		
+		// ==== Preview and Checkbox Wrapper =====
+		JPanel previewWrapper = new JPanel();
+		previewWrapper.setLayout(new BoxLayout(previewWrapper, BoxLayout.Y_AXIS));
+
+		previewPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		secondsCheckBox.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		previewWrapper.add(previewPanel);
+		previewWrapper.add(secondsCheckBox);
+		previewWrapper.add(sizePanel);
+		previewWrapper.add(Box.createVerticalStrut(5));
+		
 		// ===== TABS =====
 		tabs = new JTabbedPane();
 
+		UIManager.put("TabbedPane.background", new Color(40,40,40));
+		UIManager.put("TabbedPane.foreground", Color.WHITE);
+		UIManager.put("TabbedPane.selected", new Color(70,70,70));
+		UIManager.put("TabbedPane.contentAreaColor", new Color(30,30,30));
+		UIManager.put("TabbedPane.borderHightlightColor", new Color(60,60,60));
+		UIManager.put("TabbedPane.shadow", new Color(20,20,20));
+		
 		// RGB TAB
-		JPanel rgbPanel = new JPanel(new GridLayout(3, 1));
+		JPanel rgbPanel = new JPanel();
+		rgbPanel.setLayout(new BoxLayout(rgbPanel, BoxLayout.Y_AXIS));
 
 		redSlider = createSlider(color.getRed());
 		greenSlider = createSlider(color.getGreen());
@@ -166,10 +246,19 @@ public class ConfigFrame extends JFrame
 		rgbPanel.add(labeledSlider("G", greenSlider));
 		rgbPanel.add(labeledSlider("B", blueSlider));
 
+		redSlider.setPreferredSize(new Dimension(150, 50));
+		redSlider.setMaximumSize(new Dimension(150, 50));
+		greenSlider.setPreferredSize(new Dimension(150, 50));
+		greenSlider.setMaximumSize(new Dimension(150, 50));
+		blueSlider.setPreferredSize(new Dimension(150, 50));
+		blueSlider.setMaximumSize(new Dimension(150, 50));
+		
+		
 		tabs.addTab("RGB", rgbPanel);
 
 		// HSV TAB
 		JPanel hsvPanel = new JPanel(new GridLayout(3, 1));
+		hsvPanel.setLayout(new BoxLayout(hsvPanel, BoxLayout.Y_AXIS));
 
 		float[] hsv = Color.RGBtoHSB(color.getRed(), color.getGreen(), color.getBlue(), null);
 
@@ -180,18 +269,44 @@ public class ConfigFrame extends JFrame
 		ChangeListener hsvListener = e -> updatePreview();
 
 		hueSlider.addChangeListener(hsvListener);
+		hueSlider.setMajorTickSpacing(90);
+		hueSlider.setPaintTicks(true);
+		hueSlider.setPaintLabels(true);
+		hueSlider.setPreferredSize(new Dimension(150, 50));
+		hueSlider.setMaximumSize(new Dimension(150, 50));
+		
 		satSlider.addChangeListener(hsvListener);
+		satSlider.setMajorTickSpacing(25);
+		satSlider.setPaintTicks(true);
+		satSlider.setPaintLabels(true);
+		satSlider.setPreferredSize(new Dimension(150, 50));
+		satSlider.setMaximumSize(new Dimension(150, 50));
+		
 		valSlider.addChangeListener(hsvListener);
+		valSlider.setMajorTickSpacing(25);
+		valSlider.setPaintTicks(true);
+		valSlider.setPaintLabels(true);
+		valSlider.setPreferredSize(new Dimension(150, 50));
+		valSlider.setMaximumSize(new Dimension(150, 50));
 
 		hsvPanel.add(labeledSlider("H", hueSlider));
 		hsvPanel.add(labeledSlider("S", satSlider));
 		hsvPanel.add(labeledSlider("V", valSlider));
 
 		tabs.addTab("HSV", hsvPanel);
-
+//		tabs.setForeground(Color.WHITE);
+//		tabs.setForegroundAt(0, Color.WHITE);
+//		tabs.setForegroundAt(1, Color.WHITE);
+//		tabs.setBackgroundAt(0, new Color(40, 40, 40));
+//		tabs.setBackgroundAt(1, new Color(40, 40, 40));
+		updateTabColors();
+		tabs.addChangeListener(e -> updateTabColors());
+		
+		
 		// ===== WRAP =====
 		JPanel center = new JPanel(new BorderLayout(10, 10));
-		center.add(previewPanel, BorderLayout.NORTH);
+
+		center.add(previewWrapper, BorderLayout.NORTH);
 		center.add(tabs, BorderLayout.CENTER);
 
 		mainPanel.add(center, BorderLayout.CENTER);
@@ -204,7 +319,11 @@ public class ConfigFrame extends JFrame
 		applyButton.setBackground(new Color(60, 60, 60));
 		applyButton.setForeground(Color.WHITE);
 		applyButton.setFocusPainted(false);
-		applyButton.addActionListener(e -> applyColor());
+		applyButton.addActionListener(e -> {
+		    applyColor();
+		    applyType();
+		    applyTextSize();
+		});
 
 		applyPanel.add(applyButton);
 
@@ -214,6 +333,23 @@ public class ConfigFrame extends JFrame
 		add(mainPanel, BorderLayout.CENTER);
 
 		applyTheme();
+	}
+	
+	private void updateTabColors()
+	{
+	    for (int i = 0; i < tabs.getTabCount(); i++)
+	    {
+	        if (i == tabs.getSelectedIndex())
+	        {
+	            // Selected tab
+	            tabs.setForegroundAt(i, Color.BLACK);
+	        }
+	        else
+	        {
+	            // Unselected tabs
+	            tabs.setForegroundAt(i, Color.WHITE);
+	        }
+	    }
 	}
 	
 	private JSlider createSlider(int value)
@@ -233,25 +369,24 @@ public class ConfigFrame extends JFrame
 
 	    // optional but HIGHLY recommended: contrast fix
 	    float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
+	    previewLabel.setOpaque(true);
 	    previewLabel.setBackground(hsb[2] < 0.5 ? Color.WHITE : Color.BLACK);
 	}
 	
 	private JPanel labeledSlider(String label, JSlider slider)
 	{
 	    JPanel panel = new JPanel(new BorderLayout());
+
+	    panel.setBorder(
+	        BorderFactory.createEmptyBorder(0, 20, 0, 20)
+	    );
+
 	    panel.add(new JLabel(label), BorderLayout.WEST);
 	    panel.add(slider, BorderLayout.CENTER);
+
 	    return panel;
 	}
 
-//	private void styleField(JTextField field)
-//	{
-//	    field.setBorder(BorderFactory.createCompoundBorder(
-//	        BorderFactory.createLineBorder(new Color(120,120,120)),
-//	        BorderFactory.createEmptyBorder(2,4,2,4)
-//	    ));
-//	}
-//	
 	private void updateComponentColors(Container container, Color background, Color foreground)
 	{
 
@@ -309,13 +444,42 @@ public class ConfigFrame extends JFrame
 
 		updateComponentColors(getContentPane(), background, foreground);
 
+		updatePreview();
 		repaint();
 	}
 
+	private void applyType()
+	{
+		if(secondsCheckBox.isSelected()) clocks[0].setType(ClockFrame.ClockType.HourMinuteSecond);
+		else clocks[0].setType(ClockFrame.ClockType.HourMinute);
+	}
+	
 	private void applyColor()
 	{
 	    Color color = getCurrentColor();
 
 	    clocks[0].updateColor(color);
+	}
+	
+	private void applyTextSize()
+	{
+	    try
+	    {
+	        int size = Integer.parseInt(sizeField.getText());
+
+	        if (size < 1)
+	            size = 1;
+
+	        clocks[0].changeTextSize(size);
+	    }
+	    catch (NumberFormatException ex)
+	    {
+	        JOptionPane.showMessageDialog(
+	            this,
+	            "Please enter a valid number.",
+	            "Invalid Size",
+	            JOptionPane.ERROR_MESSAGE
+	        );
+	    }
 	}
 }
