@@ -5,7 +5,10 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.DisplayMode;
 import java.awt.FlowLayout;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.Point;
@@ -19,7 +22,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JColorChooser;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -33,31 +36,55 @@ import javax.swing.event.ChangeListener;
 @SuppressWarnings("serial")
 public class ConfigFrame extends JFrame
 {
-	private JSlider redSlider, greenSlider, blueSlider;
-	private JSlider hueSlider, satSlider, valSlider;
-	private JTabbedPane tabs;
-	private JTextField sizeField;
-	private JLabel previewLabel;
-	private JPanel mainPanel;
 	private JPanel titleBar;
-	private JButton increaseButton;
-	private JButton decreaseButton;
-	private JButton applyButton;
 	private JButton themeButton;
 	private JButton closeButton;
-	private JCheckBox secondsCheckBox;
 	private Point dragOffset;
+
+	private JPanel mainPanel;
+
+	private JLabel previewLabel;
+
+	private JCheckBox secondsCheckBox;
+	
+	private JTextField sizeField;
+	private JButton increaseButton;
+	private JButton decreaseButton;
+	
+	private JLabel positionLabel;
+	private JButton leftPositionButton;
+	private JButton rightPositionButton;
+	private Main.DisplayPosition selectedPosition = Main.DisplayPosition.TopRight;
+	
+	private JComboBox<String> monitorBox;
+
+	private JTabbedPane tabs;
+	private JSlider redSlider, greenSlider, blueSlider;
+	private JSlider hueSlider, satSlider, valSlider;
+
+	private JButton applyButton;
+
 	private ClockFrame[] clocks;
 	private Color titleBarColor = new Color(47, 47, 47);
 	private boolean darkMode = true;
+	String[] monitorNames;
 
 	public ConfigFrame(ClockFrame[] clocks)
 	{
 		this.clocks = clocks;
+		GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+		monitorNames = new String[screens.length];
+
+		for (int i = 0; i < screens.length; i++)
+		{
+		    DisplayMode dm = screens[i].getDisplayMode();
+
+		    monitorNames[i] = "Monitor " + (i + 1) + " (" + dm.getWidth() + "x" + dm.getHeight() + ")";
+		}
 		
 		// Window settings
 		setUndecorated(true);
-		setSize(400, 400);
+		setSize(400, 450);
 		setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 15, 15)); // Round Edges Size
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setLocationRelativeTo(null);
@@ -166,9 +193,7 @@ public class ConfigFrame extends JFrame
 		    }
 		});
 		
-		// ===== TextSizeField ======
-		JPanel sizePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-
+		// ===== TextSize ======
 		decreaseButton = new JButton("-");
 		sizeField = new JTextField("10", 3); // default size
 		increaseButton = new JButton("+");
@@ -179,11 +204,6 @@ public class ConfigFrame extends JFrame
 		increaseButton.setPreferredSize(btnSize);
 		increaseButton.setFocusable(false);
 		
-		sizePanel.add(decreaseButton);
-		sizePanel.add(sizeField);
-		sizePanel.add(increaseButton);
-		
-		// ==== Decrease/Increase Button ====
 		decreaseButton.addActionListener(e -> {
 		    try {
 		        int size = Integer.parseInt(sizeField.getText());
@@ -206,17 +226,59 @@ public class ConfigFrame extends JFrame
 		    catch (NumberFormatException ignored) {}
 		});
 		
-		// ==== Preview and Checkbox Wrapper =====
-		JPanel previewWrapper = new JPanel();
-		previewWrapper.setLayout(new BoxLayout(previewWrapper, BoxLayout.Y_AXIS));
+		// ==== Display Position ====
+		positionLabel = new JLabel("Top Right");
+
+		leftPositionButton = new JButton("<");
+		rightPositionButton = new JButton(">");
+
+		Dimension arrowSize = new Dimension(45, 25);
+		leftPositionButton.setPreferredSize(arrowSize);
+		rightPositionButton.setPreferredSize(arrowSize);
+		
+		leftPositionButton.setFocusable(false);
+		rightPositionButton.setFocusable(false);
+		
+		leftPositionButton.addActionListener(e -> togglePosition());
+		rightPositionButton.addActionListener(e -> togglePosition());
+		
+		selectedPosition = clocks[0].getDisplayPosition();
+		positionLabel.setText( (selectedPosition == Main.DisplayPosition.TopLeft) ? "Top Left" : "Top Right");
+		
+		// ==== Display ====
+		monitorBox = new JComboBox<>(monitorNames);
+		monitorBox.setPreferredSize(new Dimension(100, 25));
+		monitorBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+		monitorBox.setAlignmentX(Component.CENTER_ALIGNMENT);
+		monitorBox.setSelectedIndex(clocks[0].getDisplay());
+		
+		// ==== Preview and Settings Wrapper =====
+		JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+
+		controlsPanel.add(decreaseButton);
+		controlsPanel.add(sizeField);
+		controlsPanel.add(increaseButton);
+
+		controlsPanel.add(Box.createHorizontalStrut(25));
+
+		controlsPanel.add(leftPositionButton);
+		controlsPanel.add(positionLabel);
+		controlsPanel.add(rightPositionButton);
+		
+
+		JPanel settingsWrapper = new JPanel();
+		settingsWrapper.setLayout(new BoxLayout(settingsWrapper, BoxLayout.Y_AXIS));
 
 		previewPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 		secondsCheckBox.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-		previewWrapper.add(previewPanel);
-		previewWrapper.add(secondsCheckBox);
-		previewWrapper.add(sizePanel);
-		previewWrapper.add(Box.createVerticalStrut(5));
+		settingsWrapper.add(previewPanel);
+		settingsWrapper.add(secondsCheckBox);
+		settingsWrapper.add(Box.createVerticalStrut(5));
+		settingsWrapper.add(controlsPanel);
+		settingsWrapper.add(Box.createVerticalStrut(5));
+		settingsWrapper.add(Box.createVerticalStrut(5));
+		settingsWrapper.add(monitorBox);
 		
 		// ===== TABS =====
 		tabs = new JTabbedPane();
@@ -306,7 +368,7 @@ public class ConfigFrame extends JFrame
 		// ===== WRAP =====
 		JPanel center = new JPanel(new BorderLayout(10, 10));
 
-		center.add(previewWrapper, BorderLayout.NORTH);
+		center.add(settingsWrapper, BorderLayout.NORTH);
 		center.add(tabs, BorderLayout.CENTER);
 
 		mainPanel.add(center, BorderLayout.CENTER);
@@ -323,6 +385,8 @@ public class ConfigFrame extends JFrame
 		    applyColor();
 		    applyType();
 		    applyTextSize();
+		    applyPosition();
+		    applyMonitor();
 		});
 
 		applyPanel.add(applyButton);
@@ -333,6 +397,20 @@ public class ConfigFrame extends JFrame
 		add(mainPanel, BorderLayout.CENTER);
 
 		applyTheme();
+	}
+	
+	private void togglePosition()
+	{
+	    if (selectedPosition == Main.DisplayPosition.TopRight)
+	    {
+	        selectedPosition = Main.DisplayPosition.TopLeft;
+	        positionLabel.setText("Top Left");
+	    }
+	    else
+	    {
+	        selectedPosition = Main.DisplayPosition.TopRight;
+	        positionLabel.setText("Top Right");
+	    }
 	}
 	
 	private void updateTabColors()
@@ -481,5 +559,15 @@ public class ConfigFrame extends JFrame
 	            JOptionPane.ERROR_MESSAGE
 	        );
 	    }
+	}
+	
+	private void applyPosition()
+	{
+	    clocks[0].updatePosition(selectedPosition);
+	}
+
+	private void applyMonitor()
+	{
+	    clocks[0].updateDisplay(monitorBox.getSelectedIndex());
 	}
 }

@@ -12,6 +12,8 @@ import org.apache.batik.gvt.GraphicsNode;
 import org.apache.batik.util.XMLResourceDescriptor;
 import org.w3c.dom.svg.SVGDocument;
 
+import com.derrentner.new_clock.Main.DisplayPosition;
+
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -56,11 +58,7 @@ public class ClockFrame extends JFrame
     private volatile ScheduledFuture<?> scheduleHandle;
 
     public ClockFrame(int display, Main.DisplayPosition position, ClockType type)
-    {
-//    	Dimension screen  =  Toolkit.getDefaultToolkit().getScreenSize();
-//		int screenWidth   =  screen.width;
-//		int screenHeight  =  screen.height;
-		
+    {		
         String sessionType = System.getenv("XDG_SESSION_TYPE");
         System.out.println("sessionType: " + sessionType);
         
@@ -87,9 +85,6 @@ public class ClockFrame extends JFrame
         loadImages();
         updateColor(color);
         setVisible(true);
-        
-//        try	{ Thread.sleep(10); }
-//        catch (InterruptedException e) { e.printStackTrace(); }
         
         updateColor(color);
         clockPanel.repaint();
@@ -278,7 +273,11 @@ public class ClockFrame extends JFrame
     
     public ClockType getClockType() { return clockType; }
     
+    public DisplayPosition getDisplayPosition() { return displayPosition; }
+    
     public synchronized LocalTime getTime() { return time; }
+    
+    public int getDisplay() { return monitorIndex; }
 
     public void setType(ClockType type)
     {
@@ -287,6 +286,11 @@ public class ClockFrame extends JFrame
     	startScheduler();
     	updateTime();
     	repaint();
+    }
+    
+    public void updateDisplay(int display) {
+    	monitorIndex = display;
+    	updatePosition(null);
     }
     
     public void updatePosition(Main.DisplayPosition monitorPosition)
