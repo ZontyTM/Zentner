@@ -33,6 +33,11 @@ import java.util.concurrent.ScheduledFuture;
 @SuppressWarnings("serial")
 public class ClockFrame extends JFrame
 {
+	private final ClockConfig config;
+
+    
+	
+	
 	public enum ClockType
 	{
 		HourMinute,
@@ -40,8 +45,8 @@ public class ClockFrame extends JFrame
 	}
     private BufferedImage[] digits;
     private BufferedImage colon;
-    private volatile Duration timeShift = Duration.ofHours(0);
-    private volatile LocalTime time = LocalTime.now().plus(timeShift);
+    private int timeShiftMinutes = 0;
+    private volatile LocalTime time = LocalTime.now().plusMinutes(timeShiftMinutes);
     private int monitorIndex = 0;
     private int imgWidth = 52;
     private int imgHeight = 74;
@@ -55,12 +60,12 @@ public class ClockFrame extends JFrame
     private Main.DisplayPosition displayPosition = Main.DisplayPosition.TopRight;
     private Color color = new Color(255, 140, 50, 255);
     private ScheduledExecutorService executor;
-    private volatile ScheduledFuture<?> scheduleHandle;
+    private volatile ScheduledFuture<?> scheduleHandler;
 
-    public ClockFrame(int display, Main.DisplayPosition position, ClockType type)
+    public ClockFrame(ClockConfig config)
     {		
         String sessionType = System.getenv("XDG_SESSION_TYPE");
-        System.out.println("sessionType: " + sessionType);
+        if(Main.DEBUG) System.out.println("sessionType: " + sessionType);
         
         if(!sessionType.equals("wayland")) {
             MouseAdapter hoverAdapter = new MouseAdapter() {
@@ -71,28 +76,38 @@ public class ClockFrame extends JFrame
             };
             addMouseListener(hoverAdapter);
         }
-    	if (display != -1) monitorIndex = display;
-		if (type != null) clockType = type;
-		if (position != null) displayPosition = position;
+//    	if (display != -1) monitorIndex = display;
+//		if (type != null) clockType = type;
+//		if (position != null) displayPosition = position;
 		
+        
+        this.config = config;
+
+        if (config.isShowSeconds())
+        {
+            setType(ClockType.HourMinuteSecond);
+        }
+        else
+        {
+            setType(ClockType.HourMinute);
+        }
+        loadImages();
+
+        applyConfig();
+        
 	    setType(Type.POPUP);
         setUndecorated(true);
         setAlwaysOnTop(true);
 		setFocusable(false);
 	    setFocusableWindowState(false);
 	    updatePosition(displayPosition);
-        getContentPane().setBackground(Color.BLACK);
-        loadImages();
-        updateColor(color);
+        getContentPane().setBackground(Color.GRAY);
         setVisible(true);
-        
-        updateColor(color);
-        clockPanel.repaint();
         
         startScheduler();
         
         clockPanel.setOpaque(true);
-        clockPanel.setBackground(Color.BLACK);
+        clockPanel.setBackground(Color.GRAY);
 
         setContentPane(clockPanel);
     }
@@ -114,23 +129,13 @@ public class ClockFrame extends JFrame
 
             int initialDelay = 60 - LocalTime.now().getSecond();
 
-            scheduleHandle = executor.scheduleAtFixedRate(
-                    task,
-                    initialDelay,
-                    60,
-                    TimeUnit.SECONDS
-            );
+            scheduleHandler = executor.scheduleAtFixedRate(task, initialDelay, 60, TimeUnit.SECONDS);
 
         } else {
 
             long initialDelay = 1000 - (System.currentTimeMillis() % 1000);
 
-            scheduleHandle = executor.scheduleAtFixedRate(
-                    task,
-                    initialDelay,
-                    1000,
-                    TimeUnit.MILLISECONDS
-            );
+            scheduleHandler = executor.scheduleAtFixedRate(task, initialDelay, 1000, TimeUnit.MILLISECONDS);
         }
     }
     
@@ -198,14 +203,28 @@ public class ClockFrame extends JFrame
     {
         digits = new BufferedImage[10];
 
-        try {
-            for (int i = 0; i < 10; i++) {
-                digits[i] = loadSvg(getClass().getResource("font/" + i + ".svg"), digitWidth, digitHeight, false);
+        for (int i = 0; i < 10; i++)
+        {
+        	try
+            {
+                BufferedImage img = loadSvg(getClass().getResource("font/" + i + ".svg"), digitWidth, digitHeight, false);
+                tint(img, color);
+                digits[i] = img;
             }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
 
-            colon = loadSvg(getClass().getResource("font/colon.svg"), digitWidth, digitHeight, true);
-
-        } catch (Exception e) {
+        try
+        {
+            colon = loadSvg(getClass().getResource("font/colon.svg"),
+                    digitWidth, digitHeight, true);
+            tint(colon, color);
+        }
+        catch (Exception e)
+        {
             e.printStackTrace();
         }
     }
@@ -278,6 +297,8 @@ public class ClockFrame extends JFrame
     public synchronized LocalTime getTime() { return time; }
     
     public int getDisplay() { return monitorIndex; }
+    
+    public ClockConfig getConfig() { return config; }
 
     public void setType(ClockType type)
     {
@@ -324,18 +345,24 @@ public class ClockFrame extends JFrame
     
     public void updateColor(Color color)
     {
-    	for (BufferedImage img : digits)
-    	{
-    		tint(img, color);
-    	}
-    	
-    	tint(colon, color);
-    	clockPanel.repaint();
+        this.color = color;
+
+        if (digits == null) return;
+
+        for (BufferedImage img : digits)
+        {
+            tint(img, color);
+        }
+
+        if (colon != null)
+            tint(colon, color);
+
+        clockPanel.repaint();
     }
     
     public synchronized void updateTime()
     {
-    	time = LocalTime.now().plus(timeShift);
+    	time = LocalTime.now().plusMinutes(timeShiftMinutes);
     }
 
     public void changeTextSize(int newSize)
@@ -344,9 +371,16 @@ public class ClockFrame extends JFrame
         digitWidth = imgWidth * digitHeight / imgHeight;
 
         loadImages();
-        updateColor(color);
-
         updatePosition(null);
-        clockPanel.repaint();
+        repaint();
+    }
+    
+    private void applyConfig()
+    {
+    	setType((config.isShowSeconds()) ? ClockType.HourMinuteSecond : ClockType.HourMinute);
+        changeTextSize(config.getTextSize());
+        updateColor(config.getColor());
+        updateDisplay(config.getMonitor());
+        updatePosition(config.getMonitorPosition());
     }
 }

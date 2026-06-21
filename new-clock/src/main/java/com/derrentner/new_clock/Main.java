@@ -1,5 +1,9 @@
 package com.derrentner.new_clock;
 
+import java.awt.GraphicsEnvironment;
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.swing.SwingUtilities;
 
 import com.derrentner.new_clock.ClockFrame.ClockType;
@@ -17,53 +21,74 @@ public class Main
 		TopRight
 	}
 	
-	public static ConfigFrame f;
-	public static ClockFrame[] cf;
+	public static Boolean DEBUG = false;
+    private static Settings settings;
+    static ConfigFrame configFrame;
+    static List<ClockFrame> clockFrames = new ArrayList<>();
 
 	public static void main(String[] args)
 	{
-		SystemTray.DEBUG = true;
-		System.out.println(Main.class.getResource("font/0.svg"));
-		System.out.println(Main.class.getResource("pics/exit.png"));
-		(new Thread(() -> tray())).start();
-		SwingUtilities.invokeLater(() -> cf = new ClockFrame[] { new ClockFrame(-1, null, ClockType.HourMinute)} );
-		SwingUtilities.invokeLater(() -> f = new ConfigFrame(cf));		
+		if (DEBUG == true)
+		{
+			System.out.println("Headless = " + GraphicsEnvironment.isHeadless());
+			System.out.println(System.getProperty("java.home"));
+			System.out.println(System.getProperty("java.version"));
+			System.out.println(System.getProperty("java.vendor"));
+			
+			SystemTray.DEBUG = true;
+			System.out.println(Main.class.getResource("font/0.svg"));
+			System.out.println(Main.class.getResource("pics/exit.png"));			
+		}
+		
+		settings = SettingsManager.load();
+
+	    for (ClockConfig config : settings.getClocks())
+	    {
+	        ClockFrame clock = new ClockFrame(config);
+	        clockFrames.add(clock); // ✅ IMPORTANT FIX
+	        clock.setVisible(true);
+	    }
+
+	    configFrame = new ConfigFrame(settings, clockFrames);
+	    configFrame.setVisible(true);
+
+	    new Thread(Main::tray).start();		
 	}
 
 	private static void tray()
 	{
 		SystemTray tray = SystemTray.get();
 
-		System.out.println("tray = " + tray);
+		if(DEBUG) System.out.println("tray = " + tray);
 
 		if (tray == null) {
-		    System.out.println("SystemTray initialization failed");
+			if(DEBUG) System.out.println("SystemTray initialization failed");
 		    return;
 		}
-		System.out.println("Tray started...");
+		if(DEBUG) System.out.println("Tray started...");
 
 //		SystemTray tray = SystemTray.get();
 		if (Main.class.getResource("pics/clock.png") != null)
 			tray.setImage(Main.class.getResource("pics/clock.png"));
 		else
-			System.out.println("Picture not Found");
+			if(DEBUG) System.out.println("Picture not Found");
 
 		Menu mainMenu = tray.getMenu();
 
 		MenuItem openConfig = new MenuItem("Open Config", e -> {
-			System.out.println("Opening Config...");
-			f.setVisible(true);
+			if(DEBUG) System.out.println("Opening Config...");
+			configFrame.setVisible(true);
 		});
 
 		mainMenu.add(openConfig);
 
 		MenuItem exit = new MenuItem("Exit", e -> {
-			System.out.println("Exiting...");
+			if(DEBUG) System.out.println("Exiting...");
 			System.exit(0);
 		});
 
 		mainMenu.add(exit);
 
-		System.out.println("Tray Done!");
+		if(DEBUG) System.out.println("Tray Done!");
 	}
 }

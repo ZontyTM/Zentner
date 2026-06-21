@@ -15,6 +15,7 @@ import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -64,14 +65,19 @@ public class ConfigFrame extends JFrame
 
 	private JButton applyButton;
 
-	private ClockFrame[] clocks;
+//	private ClockFrame[] clocks;
 	private Color titleBarColor = new Color(47, 47, 47);
 	private boolean darkMode = true;
 	String[] monitorNames;
+	
+	private Settings settings;
+	private List<ClockFrame> clockFrames;
 
-	public ConfigFrame(ClockFrame[] clocks)
-	{
-		this.clocks = clocks;
+    public ConfigFrame(Settings settings, List<ClockFrame> clockFrames)
+    {
+        this.settings = settings;
+        this.clockFrames = clockFrames;
+
 		GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
 		monitorNames = new String[screens.length];
 
@@ -166,7 +172,7 @@ public class ConfigFrame extends JFrame
 		mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
 		// RGB Panel
-		Color color = clocks[0].getColor();
+		Color color = clockFrames.getFirst().getColor();
 
 		// ===== PREVIEW =====
 		JPanel previewPanel = new JPanel(new BorderLayout());
@@ -242,7 +248,7 @@ public class ConfigFrame extends JFrame
 		leftPositionButton.addActionListener(e -> togglePosition());
 		rightPositionButton.addActionListener(e -> togglePosition());
 		
-		selectedPosition = clocks[0].getDisplayPosition();
+		selectedPosition = clockFrames.getFirst().getDisplayPosition();
 		positionLabel.setText( (selectedPosition == Main.DisplayPosition.TopLeft) ? "Top Left" : "Top Right");
 		
 		// ==== Display ====
@@ -250,7 +256,7 @@ public class ConfigFrame extends JFrame
 		monitorBox.setPreferredSize(new Dimension(100, 25));
 		monitorBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
 		monitorBox.setAlignmentX(Component.CENTER_ALIGNMENT);
-		monitorBox.setSelectedIndex(clocks[0].getDisplay());
+		monitorBox.setSelectedIndex(clockFrames.getFirst().getDisplay());
 		
 		// ==== Preview and Settings Wrapper =====
 		JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
@@ -381,12 +387,15 @@ public class ConfigFrame extends JFrame
 		applyButton.setBackground(new Color(60, 60, 60));
 		applyButton.setForeground(Color.WHITE);
 		applyButton.setFocusPainted(false);
-		applyButton.addActionListener(e -> {
+		applyButton.addActionListener(e ->
+		{
 		    applyColor();
 		    applyType();
 		    applyTextSize();
 		    applyPosition();
 		    applyMonitor();
+
+		    SettingsManager.save(settings);
 		});
 
 		applyPanel.add(applyButton);
@@ -528,15 +537,15 @@ public class ConfigFrame extends JFrame
 
 	private void applyType()
 	{
-		if(secondsCheckBox.isSelected()) clocks[0].setType(ClockFrame.ClockType.HourMinuteSecond);
-		else clocks[0].setType(ClockFrame.ClockType.HourMinute);
+		if(secondsCheckBox.isSelected()) clockFrames.getFirst().setType(ClockFrame.ClockType.HourMinuteSecond);
+		else clockFrames.getFirst().setType(ClockFrame.ClockType.HourMinute);
 	}
 	
 	private void applyColor()
 	{
 	    Color color = getCurrentColor();
 
-	    clocks[0].updateColor(color);
+	    clockFrames.getFirst().updateColor(color);
 	}
 	
 	private void applyTextSize()
@@ -548,7 +557,7 @@ public class ConfigFrame extends JFrame
 	        if (size < 1)
 	            size = 1;
 
-	        clocks[0].changeTextSize(size);
+	        clockFrames.getFirst().changeTextSize(size);
 	    }
 	    catch (NumberFormatException ex)
 	    {
@@ -563,11 +572,11 @@ public class ConfigFrame extends JFrame
 	
 	private void applyPosition()
 	{
-	    clocks[0].updatePosition(selectedPosition);
+		clockFrames.getFirst().updatePosition(selectedPosition);
 	}
 
 	private void applyMonitor()
 	{
-	    clocks[0].updateDisplay(monitorBox.getSelectedIndex());
+		clockFrames.getFirst().updateDisplay(monitorBox.getSelectedIndex());
 	}
 }
