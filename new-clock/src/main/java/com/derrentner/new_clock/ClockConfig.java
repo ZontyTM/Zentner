@@ -6,8 +6,9 @@ public class ClockConfig
 {
     private int timeShift;
     private int monitor;
-    private Main.DisplayPosition monitorPosition;
     private int textSize;
+    private int bgTransparency;
+    private Main.DisplayPosition monitorPosition;
     private Color color;
     private boolean showSeconds;
 
@@ -19,6 +20,7 @@ public class ClockConfig
         textSize = 10;
         color = Color.WHITE;
         showSeconds = false;
+        bgTransparency = 0;
     }
     
     public ClockConfig(ClockConfig other)
@@ -29,6 +31,7 @@ public class ClockConfig
         this.textSize = other.textSize;
         this.color = other.color;
         this.showSeconds = other.showSeconds;
+        this.bgTransparency = other.bgTransparency;
     }
 
     public int getTimeShift()
@@ -89,5 +92,15 @@ public class ClockConfig
     public void setShowSeconds(boolean showSeconds)
     {
         this.showSeconds = showSeconds;
+    }
+    
+    public int getBGTransparency()
+    {
+    	return bgTransparency;
+    }
+    
+    public void setBGTransparency(int bgT)
+    {
+    	bgTransparency = bgT;
     }
 }

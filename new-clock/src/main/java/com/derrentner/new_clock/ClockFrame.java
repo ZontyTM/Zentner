@@ -34,9 +34,6 @@ import java.util.concurrent.ScheduledFuture;
 public class ClockFrame extends JFrame
 {
 	private final ClockConfig config;
-
-    
-	
 	
 	public enum ClockType
 	{
@@ -56,6 +53,7 @@ public class ClockFrame extends JFrame
     private int padding = 2;
     private int recWitdth = (int)(4.5f * digitWidth) + Math.max((int)(digitWidth * 0.25), 2 * padding) + 4 * textPadding;
     private int recHeight = digitHeight + Math.max((int)(digitHeight * 0.25),  2 * padding);
+    private int bgTransparency = 0;
     private ClockType clockType = ClockType.HourMinute;
     private Main.DisplayPosition displayPosition = Main.DisplayPosition.TopRight;
     private Color color = new Color(255, 140, 50, 255);
@@ -71,7 +69,7 @@ public class ClockFrame extends JFrame
             MouseAdapter hoverAdapter = new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
-                    hovered(e);
+                    hovered();
                 }
             };
             addMouseListener(hoverAdapter);
@@ -97,19 +95,16 @@ public class ClockFrame extends JFrame
         
 	    setType(Type.POPUP);
         setUndecorated(true);
-        setAlwaysOnTop(true);
+//        setAlwaysOnTop(false);
 		setFocusable(false);
 	    setFocusableWindowState(false);
 	    updatePosition(displayPosition);
-        getContentPane().setBackground(Color.GRAY);
         setVisible(true);
         
-        startScheduler();
-        
-        clockPanel.setOpaque(true);
-        clockPanel.setBackground(Color.GRAY);
-
+        setBackground(new Color(0, 0, 0, 0));
         setContentPane(clockPanel);
+        
+        hovered();
     }
     
     private void startScheduler() {
@@ -122,7 +117,7 @@ public class ClockFrame extends JFrame
 
         Runnable task = () -> SwingUtilities.invokeLater(() -> {
             updateTime();
-            clockPanel.repaint();
+            repaint();
         });
 
         if (clockType == ClockType.HourMinute) {
@@ -150,6 +145,15 @@ public class ClockFrame extends JFrame
 
             Graphics2D g2 = (Graphics2D) g;
 
+            // Clear previous frame completely
+            g2.setComposite(AlphaComposite.Clear);
+            g2.fillRect(0, 0, getWidth(), getHeight());
+
+            // Draw translucent background
+            g2.setComposite(AlphaComposite.SrcOver);
+            g2.setColor(new Color(0, 0, 0, (int)((100 - bgTransparency) * 2.55f)));
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+            
             int x = Math.max((int)(digitWidth * 0.125), padding);
             int y = Math.max((int)(digitHeight * 0.125), padding);
 
@@ -181,7 +185,7 @@ public class ClockFrame extends JFrame
         }
     };
     
-    public void hovered(MouseEvent m)
+    public void hovered()
 	{
 
 	    new Thread(() -> {
@@ -349,15 +353,9 @@ public class ClockFrame extends JFrame
 
         if (digits == null) return;
 
-        for (BufferedImage img : digits)
-        {
-            tint(img, color);
-        }
+        for (BufferedImage img : digits) tint(img, color);
 
-        if (colon != null)
-            tint(colon, color);
-
-        clockPanel.repaint();
+        if (colon != null) tint(colon, color);
     }
     
     public synchronized void updateTime()
@@ -372,7 +370,12 @@ public class ClockFrame extends JFrame
 
         loadImages();
         updatePosition(null);
-        repaint();
+    }
+    
+    public void changeBGTransparency(int newBGTransparency)
+    
+    {
+    	this.bgTransparency = newBGTransparency;
     }
     
     private void applyConfig()
@@ -382,5 +385,6 @@ public class ClockFrame extends JFrame
         updateColor(config.getColor());
         updateDisplay(config.getMonitor());
         updatePosition(config.getMonitorPosition());
+        changeBGTransparency(config.getBGTransparency());
     }
 }

@@ -11,8 +11,6 @@ import java.util.Properties;
 
 public class SettingsManager
 {
-    private static Path SETTINGS_FILE;
-
     public static Settings load()
     {
         Settings settings = new Settings();
@@ -44,11 +42,6 @@ public class SettingsManager
             c.setTextSize(Integer.parseInt(p.getProperty("clock." + i + ".textSize", "10")));
             c.setShowSeconds(Boolean.parseBoolean(p.getProperty("clock." + i + ".seconds", "false")));
             c.setMonitor(Integer.parseInt(p.getProperty("clock." + i + ".monitor", "0")));
-            c.setMonitorPosition(
-                Main.DisplayPosition.valueOf(
-                    p.getProperty("clock." + i + ".position", "TopRight")
-                )
-            );
             c.setTimeShift(Integer.parseInt(p.getProperty("clock." + i + ".timeshift", "0")));
 
             String[] rgb = p.getProperty("clock." + i + ".color", "255,255,255").split(",");
@@ -57,7 +50,8 @@ public class SettingsManager
                 Integer.parseInt(rgb[1]),
                 Integer.parseInt(rgb[2])
             ));
-
+            c.setBGTransparency(Integer.parseInt(p.getProperty("clock." + i + ".bgtransparency", "0")));
+            c.setMonitorPosition(Main.DisplayPosition.valueOf(p.getProperty("clock." + i + ".position", "TopRight")));
             settings.getClocks().add(c);
         }
 
@@ -84,6 +78,7 @@ public class SettingsManager
             Color col = c.getColor();
             p.setProperty("clock." + i + ".color",
                 col.getRed() + "," + col.getGreen() + "," + col.getBlue());
+            p.setProperty("clock." + i + ".bgtransparency", String.valueOf(c.getBGTransparency()));
         }
 
         try (OutputStream out = Files.newOutputStream(getSettingsFile()))

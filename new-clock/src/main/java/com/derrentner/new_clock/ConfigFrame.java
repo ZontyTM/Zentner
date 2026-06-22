@@ -62,6 +62,8 @@ public class ConfigFrame extends JFrame
 	private JTabbedPane tabs;
 	private JSlider redSlider, greenSlider, blueSlider;
 	private JSlider hueSlider, satSlider, valSlider;
+	
+	private JSlider bgTransparency;
 
 	private JButton applyButton;
 
@@ -76,7 +78,7 @@ public class ConfigFrame extends JFrame
     public ConfigFrame(Settings settings, List<ClockFrame> clockFrames)
     {
         this.settings = settings;
-        this.clockFrames = clockFrames;
+        this.clockFrames = clockFrames; // kinda doubled
 
 		GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
 		monitorNames = new String[screens.length];
@@ -90,7 +92,7 @@ public class ConfigFrame extends JFrame
 		
 		// Window settings
 		setUndecorated(true);
-		setSize(400, 450);
+		setSize(400, 500);
 		setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 15, 15)); // Round Edges Size
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setLocationRelativeTo(null);
@@ -172,7 +174,7 @@ public class ConfigFrame extends JFrame
 		mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
 		// RGB Panel
-		Color color = clockFrames.getFirst().getColor();
+		Color color = settings.getClocks().getFirst().getColor();
 
 		// ===== PREVIEW =====
 		JPanel previewPanel = new JPanel(new BorderLayout());
@@ -198,10 +200,11 @@ public class ConfigFrame extends JFrame
 		        previewLabel.setText("12:34");
 		    }
 		});
+		secondsCheckBox.setSelected(settings.getClocks().getFirst().isShowSeconds());
 		
 		// ===== TextSize ======
 		decreaseButton = new JButton("-");
-		sizeField = new JTextField("10", 3); // default size
+		sizeField = new JTextField(String.valueOf(settings.getClocks().getFirst().getTextSize()), 3); // default size
 		increaseButton = new JButton("+");
 
 		Dimension btnSize = new Dimension(45, 25);
@@ -233,7 +236,7 @@ public class ConfigFrame extends JFrame
 		});
 		
 		// ==== Display Position ====
-		positionLabel = new JLabel("Top Right");
+		positionLabel = new JLabel((settings.getClocks().getFirst().getMonitorPosition() == Main.DisplayPosition.TopLeft) ? "Top Left" : "Top Right");
 
 		leftPositionButton = new JButton("<");
 		rightPositionButton = new JButton(">");
@@ -257,6 +260,14 @@ public class ConfigFrame extends JFrame
 		monitorBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
 		monitorBox.setAlignmentX(Component.CENTER_ALIGNMENT);
 		monitorBox.setSelectedIndex(clockFrames.getFirst().getDisplay());
+		
+		// ==== BG Transparency ====
+		bgTransparency = new JSlider(0, 100);
+		bgTransparency.setValue(settings.getClocks().getFirst().getBGTransparency());
+		bgTransparency.setMajorTickSpacing(50);
+		bgTransparency.setPaintTicks(true);
+		bgTransparency.setPreferredSize(new Dimension(150, 50));
+		bgTransparency.setMaximumSize(new Dimension(150, 50));
 		
 		// ==== Preview and Settings Wrapper =====
 		JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
@@ -283,8 +294,10 @@ public class ConfigFrame extends JFrame
 		settingsWrapper.add(Box.createVerticalStrut(5));
 		settingsWrapper.add(controlsPanel);
 		settingsWrapper.add(Box.createVerticalStrut(5));
-		settingsWrapper.add(Box.createVerticalStrut(5));
 		settingsWrapper.add(monitorBox);
+		settingsWrapper.add(Box.createVerticalStrut(5));
+		settingsWrapper.add(bgTransparency);
+		
 		
 		// ===== TABS =====
 		tabs = new JTabbedPane();
@@ -362,16 +375,11 @@ public class ConfigFrame extends JFrame
 		hsvPanel.add(labeledSlider("V", valSlider));
 
 		tabs.addTab("HSV", hsvPanel);
-//		tabs.setForeground(Color.WHITE);
-//		tabs.setForegroundAt(0, Color.WHITE);
-//		tabs.setForegroundAt(1, Color.WHITE);
-//		tabs.setBackgroundAt(0, new Color(40, 40, 40));
-//		tabs.setBackgroundAt(1, new Color(40, 40, 40));
+		
 		updateTabColors();
 		tabs.addChangeListener(e -> updateTabColors());
 		
-		
-		// ===== WRAP =====
+		// =====     WRAP      =====
 		JPanel center = new JPanel(new BorderLayout(10, 10));
 
 		center.add(settingsWrapper, BorderLayout.NORTH);
@@ -394,6 +402,7 @@ public class ConfigFrame extends JFrame
 		    applyTextSize();
 		    applyPosition();
 		    applyMonitor();
+		    applyBGTransparency();
 
 		    SettingsManager.save(settings);
 		});
@@ -424,16 +433,33 @@ public class ConfigFrame extends JFrame
 	
 	private void updateTabColors()
 	{
+		if (tabs.getSelectedIndex() == 0)
+		{
+			Color rgb = Color.getHSBColor(hueSlider.getValue()/360f, satSlider.getValue()/100f, valSlider.getValue()/100f);
+			
+			redSlider.setValue(rgb.getRed());
+			greenSlider.setValue(rgb.getGreen());
+			blueSlider.setValue(rgb.getBlue());	
+		}
+		else
+		{
+			float[] hsv = Color.RGBtoHSB(redSlider.getValue(), greenSlider.getValue(), blueSlider.getValue(), null);
+
+			hueSlider.setValue((int)(hsv[0] * 360));
+			satSlider.setValue((int)(hsv[1] * 100));
+			valSlider.setValue((int)(hsv[2] * 100));
+		}
+
+		
+
 	    for (int i = 0; i < tabs.getTabCount(); i++)
 	    {
 	        if (i == tabs.getSelectedIndex())
 	        {
-	            // Selected tab
 	            tabs.setForegroundAt(i, Color.BLACK);
 	        }
 	        else
 	        {
-	            // Unselected tabs
 	            tabs.setForegroundAt(i, Color.WHITE);
 	        }
 	    }
@@ -539,12 +565,13 @@ public class ConfigFrame extends JFrame
 	{
 		if(secondsCheckBox.isSelected()) clockFrames.getFirst().setType(ClockFrame.ClockType.HourMinuteSecond);
 		else clockFrames.getFirst().setType(ClockFrame.ClockType.HourMinute);
+		settings.getClocks().getFirst().setShowSeconds(secondsCheckBox.isSelected());
 	}
 	
 	private void applyColor()
 	{
 	    Color color = getCurrentColor();
-
+	    settings.getClocks().getFirst().setColor(color);
 	    clockFrames.getFirst().updateColor(color);
 	}
 	
@@ -553,30 +580,31 @@ public class ConfigFrame extends JFrame
 	    try
 	    {
 	        int size = Integer.parseInt(sizeField.getText());
-
-	        if (size < 1)
-	            size = 1;
-
+	        if (size < 1) size = 1;
+	        settings.getClocks().getFirst().setTextSize(size);
 	        clockFrames.getFirst().changeTextSize(size);
 	    }
 	    catch (NumberFormatException ex)
 	    {
-	        JOptionPane.showMessageDialog(
-	            this,
-	            "Please enter a valid number.",
-	            "Invalid Size",
-	            JOptionPane.ERROR_MESSAGE
-	        );
+	        JOptionPane.showMessageDialog(this, "Please enter a valid number.", "Invalid Size", JOptionPane.ERROR_MESSAGE);
 	    }
 	}
 	
 	private void applyPosition()
 	{
 		clockFrames.getFirst().updatePosition(selectedPosition);
+		settings.getClocks().getFirst().setMonitorPosition(selectedPosition);
 	}
 
 	private void applyMonitor()
 	{
 		clockFrames.getFirst().updateDisplay(monitorBox.getSelectedIndex());
+		settings.getClocks().getFirst().setMonitor(monitorBox.getSelectedIndex());
+	}
+	
+	private void applyBGTransparency()
+	{
+		clockFrames.getFirst().changeBGTransparency(bgTransparency.getValue());
+		settings.getClocks().getFirst().setBGTransparency(bgTransparency.getValue());
 	}
 }

@@ -45,12 +45,11 @@ public class Main
 	    for (ClockConfig config : settings.getClocks())
 	    {
 	        ClockFrame clock = new ClockFrame(config);
-	        clockFrames.add(clock); // ✅ IMPORTANT FIX
+	        clockFrames.add(clock);
 	        clock.setVisible(true);
 	    }
 
 	    configFrame = new ConfigFrame(settings, clockFrames);
-	    configFrame.setVisible(true);
 
 	    new Thread(Main::tray).start();		
 	}
