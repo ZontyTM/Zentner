@@ -59,11 +59,12 @@ public class ConfigFrame extends JFrame
 	
 	private JComboBox<String> monitorBox;
 
+	private JLabel bgTransparencyLabel;
+	private JSlider bgTransparency;
+
 	private JTabbedPane tabs;
 	private JSlider redSlider, greenSlider, blueSlider;
 	private JSlider hueSlider, satSlider, valSlider;
-	
-	private JSlider bgTransparency;
 
 	private JButton applyButton;
 
@@ -96,7 +97,7 @@ public class ConfigFrame extends JFrame
 		setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 15, 15)); // Round Edges Size
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setLocationRelativeTo(null);
-
+		
 		// Custom title bar
 		titleBar = new JPanel(new BorderLayout());
 		titleBar.setPreferredSize(new Dimension(0, 20));
@@ -181,14 +182,14 @@ public class ConfigFrame extends JFrame
 		previewPanel.setBackground(Color.BLACK);
 		previewPanel.setPreferredSize(new Dimension(200, 60));
 
-		previewLabel = new JLabel("12:34", JLabel.CENTER);
+		previewLabel = new JLabel(settings.getClocks().getFirst().isShowSeconds() ? "12:34:56" : "12:34", JLabel.CENTER);
 		previewLabel.setFont(previewLabel.getFont().deriveFont(28f));
 		previewPanel.add(previewLabel, BorderLayout.CENTER);
 
 		// ===== SECONDS CHECKBOX =====
 		secondsCheckBox = new JCheckBox("Show Seconds");
 		secondsCheckBox.setFocusPainted(false);
-		
+		secondsCheckBox.setSelected(settings.getClocks().getFirst().isShowSeconds());
 		secondsCheckBox.addActionListener(e ->
 		{
 		    if (secondsCheckBox.isSelected())
@@ -200,7 +201,6 @@ public class ConfigFrame extends JFrame
 		        previewLabel.setText("12:34");
 		    }
 		});
-		secondsCheckBox.setSelected(settings.getClocks().getFirst().isShowSeconds());
 		
 		// ===== TextSize ======
 		decreaseButton = new JButton("-");
@@ -262,6 +262,7 @@ public class ConfigFrame extends JFrame
 		monitorBox.setSelectedIndex(clockFrames.getFirst().getDisplay());
 		
 		// ==== BG Transparency ====
+		bgTransparencyLabel = new JLabel("Background Transparency");
 		bgTransparency = new JSlider(0, 100);
 		bgTransparency.setValue(settings.getClocks().getFirst().getBGTransparency());
 		bgTransparency.setMajorTickSpacing(50);
@@ -288,14 +289,16 @@ public class ConfigFrame extends JFrame
 
 		previewPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 		secondsCheckBox.setAlignmentX(Component.CENTER_ALIGNMENT);
-
+		bgTransparencyLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		
 		settingsWrapper.add(previewPanel);
 		settingsWrapper.add(secondsCheckBox);
 		settingsWrapper.add(Box.createVerticalStrut(5));
 		settingsWrapper.add(controlsPanel);
 		settingsWrapper.add(Box.createVerticalStrut(5));
 		settingsWrapper.add(monitorBox);
-		settingsWrapper.add(Box.createVerticalStrut(5));
+		settingsWrapper.add(Box.createVerticalStrut(15));
+		settingsWrapper.add(bgTransparencyLabel);
 		settingsWrapper.add(bgTransparency);
 		
 		
@@ -403,7 +406,7 @@ public class ConfigFrame extends JFrame
 		    applyPosition();
 		    applyMonitor();
 		    applyBGTransparency();
-
+		    clockFrames.getFirst().loadImages();
 		    SettingsManager.save(settings);
 		});
 
@@ -413,7 +416,6 @@ public class ConfigFrame extends JFrame
 
 		// Rest
 		add(mainPanel, BorderLayout.CENTER);
-
 		applyTheme();
 	}
 	
@@ -474,7 +476,7 @@ public class ConfigFrame extends JFrame
 	    return slider;
 	}
 	
-	private void updatePreview()
+	public void updatePreview()
 	{
 	    Color c = getCurrentColor();
 

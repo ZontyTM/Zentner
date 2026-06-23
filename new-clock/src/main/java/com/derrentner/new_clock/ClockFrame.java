@@ -41,7 +41,6 @@ public class ClockFrame extends JFrame
 		HourMinuteSecond
 	}
     private BufferedImage[] digits;
-    private BufferedImage colon;
     private int timeShiftMinutes = 0;
     private volatile LocalTime time = LocalTime.now().plusMinutes(timeShiftMinutes);
     private int monitorIndex = 0;
@@ -89,7 +88,6 @@ public class ClockFrame extends JFrame
         {
             setType(ClockType.HourMinute);
         }
-        loadImages();
 
         applyConfig();
         
@@ -141,7 +139,7 @@ public class ClockFrame extends JFrame
         {
             super.paintComponent(g);
 
-            if (digits == null) return;
+//            if (digits == null) return;
 
             Graphics2D g2 = (Graphics2D) g;
 
@@ -152,7 +150,7 @@ public class ClockFrame extends JFrame
             // Draw translucent background
             g2.setComposite(AlphaComposite.SrcOver);
             g2.setColor(new Color(0, 0, 0, (int)((100 - bgTransparency) * 2.55f)));
-            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+            g2.fillRect(0, 0, getWidth(), getHeight());
             
             int x = Math.max((int)(digitWidth * 0.125), padding);
             int y = Math.max((int)(digitHeight * 0.125), padding);
@@ -163,7 +161,7 @@ public class ClockFrame extends JFrame
 
             for (char c : time)
             {
-                BufferedImage img = (c == ':') ? colon : digits[c - '0'];
+                BufferedImage img = (c == ':') ? digits[10] : digits[c - '0'];
 
                 if (c == ':')
                 {
@@ -203,93 +201,25 @@ public class ClockFrame extends JFrame
 	    }).start();
 	}
     
-    private void loadImages()
+    public void loadImages()
     {
-        digits = new BufferedImage[10];
-
-        for (int i = 0; i < 10; i++)
-        {
-        	try
-            {
-                BufferedImage img = loadSvg(getClass().getResource("font/" + i + ".svg"), digitWidth, digitHeight, false);
-                tint(img, color);
-                digits[i] = img;
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-        }
-
-        try
-        {
-            colon = loadSvg(getClass().getResource("font/colon.svg"),
-                    digitWidth, digitHeight, true);
-            tint(colon, color);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-    }
-    
-    private void tint(BufferedImage img, Color color)
-    {
-    	for (int y = 0; y < img.getHeight(); y++)
+        digits = Main.main.getDefaultFont(digitHeight);
+    	for (int i = 0; i < digits.length; i++)
     	{
-    		for (int x = 0; x < img.getWidth(); x++)
-    		{
-    			int argb = img.getRGB(x, y);
-    			
-    			int alpha = (argb >> 24) & 0xff;
-    			if (alpha == 0) continue;
-    			
-    			int rgb =
-    					(color.getRed() << 16) |
-    					(color.getGreen() << 8) |
-    					color.getBlue();
-    			
-    			img.setRGB(x, y, (alpha << 24) | rgb);
-    		}
+	    	for (int y = 0; y < digits[i].getHeight(); y++)
+	    	{
+	    		for (int x = 0; x < digits[i].getWidth(); x++)
+	    		{
+	    			int argb = digits[i].getRGB(x, y);
+	    			
+	    			int alpha = (argb >> 24) & 0xff;
+	    			if (alpha == 0) continue;
+	    			int rgb = (color.getRed() << 16) | (color.getGreen() << 8) | color.getBlue();
+	    			
+	    			digits[i].setRGB(x, y, (alpha << 24) | rgb);
+	    		}
+	    	}
     	}
-    }
-    
-    private BufferedImage loadSvg(URL url, int width, int height, Boolean colon) throws Exception {
-
-        String parser = XMLResourceDescriptor.getXMLParserClassName();
-        SAXSVGDocumentFactory factory = new SAXSVGDocumentFactory(parser);
-
-        SVGDocument doc = factory.createSVGDocument(url.toString());
-
-        UserAgent userAgent = new UserAgentAdapter();
-        DocumentLoader loader = new DocumentLoader(userAgent);
-        BridgeContext ctx = new BridgeContext(userAgent, loader);
-        ctx.setDynamicState(BridgeContext.DYNAMIC);
-
-        GraphicsNode root = new GVTBuilder().build(ctx, doc);
-
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-
-        Graphics2D g2d = image.createGraphics();
-
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-
-        AffineTransform at = new AffineTransform();
-        g2d.setTransform(at);
-
-        Rectangle2D bounds = root.getPrimitiveBounds();
-        double scaleX = width  / bounds.getWidth();
-        double scaleY = height / bounds.getHeight();
-        double scale = Math.min(scaleX, scaleY);
-        
-        if (colon) scale *= 0.75;
-        
-        g2d.scale(scale, scale);
-        root.paint(g2d);
-        g2d.dispose();
-
-        return image;
     }
 
     public Color getColor() { return color; }
@@ -350,12 +280,6 @@ public class ClockFrame extends JFrame
     public void updateColor(Color color)
     {
         this.color = color;
-
-        if (digits == null) return;
-
-        for (BufferedImage img : digits) tint(img, color);
-
-        if (colon != null) tint(colon, color);
     }
     
     public synchronized void updateTime()
@@ -367,8 +291,6 @@ public class ClockFrame extends JFrame
     {
         digitHeight = newSize;
         digitWidth = imgWidth * digitHeight / imgHeight;
-
-        loadImages();
         updatePosition(null);
     }
     
@@ -386,5 +308,6 @@ public class ClockFrame extends JFrame
         updateDisplay(config.getMonitor());
         updatePosition(config.getMonitorPosition());
         changeBGTransparency(config.getBGTransparency());
+        loadImages();
     }
 }

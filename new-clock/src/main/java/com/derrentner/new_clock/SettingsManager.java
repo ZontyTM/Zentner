@@ -45,11 +45,7 @@ public class SettingsManager
             c.setTimeShift(Integer.parseInt(p.getProperty("clock." + i + ".timeshift", "0")));
 
             String[] rgb = p.getProperty("clock." + i + ".color", "255,255,255").split(",");
-            c.setColor(new Color(
-                Integer.parseInt(rgb[0]),
-                Integer.parseInt(rgb[1]),
-                Integer.parseInt(rgb[2])
-            ));
+            c.setColor(new Color( Integer.parseInt(rgb[0]), Integer.parseInt(rgb[1]), Integer.parseInt(rgb[2]) ));
             c.setBGTransparency(Integer.parseInt(p.getProperty("clock." + i + ".bgtransparency", "0")));
             c.setMonitorPosition(Main.DisplayPosition.valueOf(p.getProperty("clock." + i + ".position", "TopRight")));
             settings.getClocks().add(c);
@@ -68,16 +64,14 @@ public class SettingsManager
         for (int i = 0; i < clocks.size(); i++)
         {
             ClockConfig c = clocks.get(i);
+            Color col = c.getColor();
 
             p.setProperty("clock." + i + ".textSize", String.valueOf(c.getTextSize()));
             p.setProperty("clock." + i + ".seconds", String.valueOf(c.isShowSeconds()));
             p.setProperty("clock." + i + ".monitor", String.valueOf(c.getMonitor()));
             p.setProperty("clock." + i + ".position", c.getMonitorPosition().name());
             p.setProperty("clock." + i + ".timeshift", String.valueOf(c.getTimeShift()));
-
-            Color col = c.getColor();
-            p.setProperty("clock." + i + ".color",
-                col.getRed() + "," + col.getGreen() + "," + col.getBlue());
+            p.setProperty("clock." + i + ".color", col.getRed() + "," + col.getGreen() + "," + col.getBlue());
             p.setProperty("clock." + i + ".bgtransparency", String.valueOf(c.getBGTransparency()));
         }
 
