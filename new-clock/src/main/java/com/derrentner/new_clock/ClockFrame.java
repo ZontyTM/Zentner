@@ -62,7 +62,7 @@ public class ClockFrame extends JFrame
     public ClockFrame(ClockConfig config)
     {		
         String sessionType = System.getenv("XDG_SESSION_TYPE");
-        if(Main.DEBUG) System.out.println("sessionType: " + sessionType);
+        if(Main.main.DEBUG) System.out.println("sessionType: " + sessionType);
         
         if(!sessionType.equals("wayland")) {
             MouseAdapter hoverAdapter = new MouseAdapter() {
@@ -103,6 +103,8 @@ public class ClockFrame extends JFrame
         setContentPane(clockPanel);
         
         hovered();
+        
+        if (Main.main.DEBUG) System.out.println("Window Transparency supported: " + GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().isWindowTranslucencySupported(GraphicsDevice.WindowTranslucency.PERPIXEL_TRANSLUCENT) );
     }
     
     private void startScheduler() {
@@ -137,14 +139,13 @@ public class ClockFrame extends JFrame
         @Override
         protected void paintComponent(Graphics g)
         {
-            super.paintComponent(g);
-
-//            if (digits == null) return;
+        	super.paintComponent(g);
 
             Graphics2D g2 = (Graphics2D) g;
 
-            // Clear previous frame completely
-            g2.setComposite(AlphaComposite.Clear);
+            // Clear previous frame
+            g2.setComposite(AlphaComposite.Src);
+            g2.setColor(new Color(0, 0, 0, 0));
             g2.fillRect(0, 0, getWidth(), getHeight());
 
             // Draw translucent background
@@ -165,13 +166,7 @@ public class ClockFrame extends JFrame
 
                 if (c == ':')
                 {
-                    g2.drawImage(img,
-                            x - (int)(digitWidth * 0.25 + textPadding / 2.0f),
-                            y,
-                            digitWidth,
-                            digitHeight,
-                            null);
-
+                    g2.drawImage(img, x - (int)(digitWidth * 0.25 + textPadding / 2.0f), y, digitWidth, digitHeight, null);
                     x += textPadding + digitWidth / 2;
                 }
                 else
@@ -201,8 +196,9 @@ public class ClockFrame extends JFrame
 	    }).start();
 	}
     
-    public void loadImages()
+    private void loadImages()
     {
+    	System.out.println("Reloading Images");
         digits = Main.main.getDefaultFont(digitHeight);
     	for (int i = 0; i < digits.length; i++)
     	{
@@ -232,6 +228,8 @@ public class ClockFrame extends JFrame
     
     public int getDisplay() { return monitorIndex; }
     
+    public int getTimeShiftMinutes() { return timeShiftMinutes; }
+
     public ClockConfig getConfig() { return config; }
 
     public void setType(ClockType type)
@@ -289,6 +287,7 @@ public class ClockFrame extends JFrame
 
     public void changeTextSize(int newSize)
     {
+    	if (digitHeight == newSize) return;
         digitHeight = newSize;
         digitWidth = imgWidth * digitHeight / imgHeight;
         updatePosition(null);
@@ -300,14 +299,27 @@ public class ClockFrame extends JFrame
     	this.bgTransparency = newBGTransparency;
     }
     
-    private void applyConfig()
+    public void setTimeShiftMinutes(int timeShift)
     {
+    	this.timeShiftMinutes = timeShift;
+    }
+    
+    public void applyConfig()
+    {
+    	int size = digitHeight;
+    	Color oldColor = color;
     	setType((config.isShowSeconds()) ? ClockType.HourMinuteSecond : ClockType.HourMinute);
         changeTextSize(config.getTextSize());
         updateColor(config.getColor());
         updateDisplay(config.getMonitor());
         updatePosition(config.getMonitorPosition());
         changeBGTransparency(config.getBGTransparency());
-        loadImages();
+        setTimeShiftMinutes(config.getTimeShift());
+        
+        if(size != digitHeight || !oldColor.equals(color) || digits == null)
+        {
+        	if (Main.main.DEBUG) System.out.println(size + " != " + digitHeight + " || " + oldColor + " != " + color + " || digits are null");
+        	loadImages();
+        }
     }
 }

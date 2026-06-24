@@ -37,21 +37,26 @@ public class Main
 		TopRight
 	}
 	
-	public static Boolean DEBUG = false;
+	public Boolean DEBUG = false;
     private static Settings settings;
     private static ConfigFrame configFrame;
     private static List<ClockFrame> clockFrames = new ArrayList<>();
     private static Map<Integer,BufferedImage[]> defaultFonts = new HashMap<Integer, BufferedImage[]>();
+    public static String[] arguments;
     public static Main main;
 
 	public static void main(String[] args)
 	{
-	    main = new Main();
+	    if (args != null)
+	    	arguments = args;
+		main = new Main();
 		main.run();
 	}
 
 	private void run()
 	{
+		if (arguments[0] != null && arguments[0].equals("-debug"))
+			DEBUG = true;
 		if (DEBUG == true)
 		{
 			System.out.println("Headless = " + GraphicsEnvironment.isHeadless());
@@ -75,10 +80,10 @@ public class Main
 
 	    configFrame = new ConfigFrame(settings, clockFrames);
 
-	    new Thread(Main::tray).start();		
+	    new Thread(main::tray).start();		
 	}
 	
-	private static void tray()
+	private void tray()
 	{
 		SystemTray tray = SystemTray.get();
 

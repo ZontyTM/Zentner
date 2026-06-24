@@ -61,6 +61,9 @@ public class ConfigFrame extends JFrame
 
 	private JLabel bgTransparencyLabel;
 	private JSlider bgTransparency;
+	
+	private JLabel timeShiftLabel;
+	private JTextField timeShiftField;
 
 	private JTabbedPane tabs;
 	private JSlider redSlider, greenSlider, blueSlider;
@@ -270,6 +273,11 @@ public class ConfigFrame extends JFrame
 		bgTransparency.setPreferredSize(new Dimension(150, 50));
 		bgTransparency.setMaximumSize(new Dimension(150, 50));
 		
+		// ==== Timeshift Field ====
+		timeShiftLabel = new JLabel("Time Shift (-)HH:mm");
+		timeShiftField = new JTextField(formatOffset(settings.getClocks().getFirst().getTimeShift()), 5);
+		timeShiftField.setMaximumSize(new Dimension(60, 25));
+		
 		// ==== Preview and Settings Wrapper =====
 		JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
 
@@ -298,8 +306,37 @@ public class ConfigFrame extends JFrame
 		settingsWrapper.add(Box.createVerticalStrut(5));
 		settingsWrapper.add(monitorBox);
 		settingsWrapper.add(Box.createVerticalStrut(15));
-		settingsWrapper.add(bgTransparencyLabel);
-		settingsWrapper.add(bgTransparency);
+
+		JPanel bgContainer = new JPanel();
+		bgContainer.setLayout(new BoxLayout(bgContainer, BoxLayout.Y_AXIS));
+
+		bgTransparencyLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		bgTransparency.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		bgContainer.add(bgTransparencyLabel);
+		bgContainer.add(Box.createVerticalStrut(5));
+		bgContainer.add(bgTransparency);
+
+
+		JPanel timeContainer = new JPanel();
+		timeContainer.setLayout(new BoxLayout(timeContainer, BoxLayout.Y_AXIS));
+
+		timeShiftLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		timeShiftField.setMaximumSize(new Dimension(80, 25));
+		timeShiftField.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		timeContainer.add(timeShiftLabel);
+		timeContainer.add(Box.createVerticalStrut(5));
+		timeContainer.add(timeShiftField);
+		
+		JPanel row = new JPanel(new GridLayout(1, 2, 20, 0));
+
+		row.add(bgContainer);
+		row.add(timeContainer);
+
+		settingsWrapper.add(row);
 		
 		
 		// ===== TABS =====
@@ -406,7 +443,8 @@ public class ConfigFrame extends JFrame
 		    applyPosition();
 		    applyMonitor();
 		    applyBGTransparency();
-		    clockFrames.getFirst().loadImages();
+		    applyTimeShift();
+		    clockFrames.getFirst().applyConfig();
 		    SettingsManager.save(settings);
 		});
 
@@ -502,6 +540,32 @@ public class ConfigFrame extends JFrame
 	    return panel;
 	}
 
+	private int parseOffset(String text)
+	{
+	    if (text.equals("") || text.equals("0")) return 0;
+		boolean negative = text.startsWith("-");
+	    
+	    text = text.replace("+", "").replace("-", "");
+
+	    String[] parts = text.split(":");
+
+	    int total = Integer.parseInt(parts[0]) * 60 + Integer.parseInt(parts[1]);
+
+	    return negative ? -total : total;
+	}
+	
+	private String formatOffset(int totalMinutes)
+	{
+	    String sign = totalMinutes < 0 ? "-" : "";
+
+	    totalMinutes = Math.abs(totalMinutes);
+
+	    int hours = totalMinutes / 60;
+	    int minutes = totalMinutes % 60;
+
+	    return String.format("%s%02d:%02d", sign, hours, minutes);
+	}
+	
 	private void updateComponentColors(Container container, Color background, Color foreground)
 	{
 
@@ -565,8 +629,6 @@ public class ConfigFrame extends JFrame
 
 	private void applyType()
 	{
-		if(secondsCheckBox.isSelected()) clockFrames.getFirst().setType(ClockFrame.ClockType.HourMinuteSecond);
-		else clockFrames.getFirst().setType(ClockFrame.ClockType.HourMinute);
 		settings.getClocks().getFirst().setShowSeconds(secondsCheckBox.isSelected());
 	}
 	
@@ -574,7 +636,6 @@ public class ConfigFrame extends JFrame
 	{
 	    Color color = getCurrentColor();
 	    settings.getClocks().getFirst().setColor(color);
-	    clockFrames.getFirst().updateColor(color);
 	}
 	
 	private void applyTextSize()
@@ -584,7 +645,6 @@ public class ConfigFrame extends JFrame
 	        int size = Integer.parseInt(sizeField.getText());
 	        if (size < 1) size = 1;
 	        settings.getClocks().getFirst().setTextSize(size);
-	        clockFrames.getFirst().changeTextSize(size);
 	    }
 	    catch (NumberFormatException ex)
 	    {
@@ -594,19 +654,21 @@ public class ConfigFrame extends JFrame
 	
 	private void applyPosition()
 	{
-		clockFrames.getFirst().updatePosition(selectedPosition);
 		settings.getClocks().getFirst().setMonitorPosition(selectedPosition);
 	}
 
 	private void applyMonitor()
 	{
-		clockFrames.getFirst().updateDisplay(monitorBox.getSelectedIndex());
 		settings.getClocks().getFirst().setMonitor(monitorBox.getSelectedIndex());
 	}
 	
 	private void applyBGTransparency()
 	{
-		clockFrames.getFirst().changeBGTransparency(bgTransparency.getValue());
 		settings.getClocks().getFirst().setBGTransparency(bgTransparency.getValue());
+	}
+	
+	private void applyTimeShift()
+	{
+		settings.getClocks().getFirst().setTimeShift(parseOffset(timeShiftField.getText()));
 	}
 }
