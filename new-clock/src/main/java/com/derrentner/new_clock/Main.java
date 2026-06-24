@@ -34,7 +34,9 @@ public class Main
 	public enum DisplayPosition
 	{
 		TopLeft,
-		TopRight
+		TopRight,
+		BottomLeft,
+		BottomRight
 	}
 	
 	public Boolean DEBUG = false;

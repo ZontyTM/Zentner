@@ -464,6 +464,16 @@ public class ConfigFrame extends JFrame
 	        selectedPosition = Main.DisplayPosition.TopLeft;
 	        positionLabel.setText("Top Left");
 	    }
+	    else if(selectedPosition == Main.DisplayPosition.TopLeft)
+	    {
+	        selectedPosition = Main.DisplayPosition.BottomRight;
+	        positionLabel.setText("Bottom Right");
+	    }
+	    else if(selectedPosition == Main.DisplayPosition.BottomRight)
+	    {
+	        selectedPosition = Main.DisplayPosition.BottomLeft;
+	        positionLabel.setText("Bottom Left");
+	    }
 	    else
 	    {
 	        selectedPosition = Main.DisplayPosition.TopRight;
@@ -659,7 +669,11 @@ public class ConfigFrame extends JFrame
 
 	private void applyMonitor()
 	{
-		settings.getClocks().getFirst().setMonitor(monitorBox.getSelectedIndex());
+		if(settings.getClocks().getFirst().getMonitor() != monitorBox.getSelectedIndex())
+		{
+			settings.getClocks().getFirst().setMonitor(monitorBox.getSelectedIndex());
+			clockFrames.set(0, new ClockFrame(settings.getClocks().getFirst()));
+		}
 	}
 	
 	private void applyBGTransparency()

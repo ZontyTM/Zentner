@@ -270,6 +270,15 @@ public class ClockFrame extends JFrame
 	            y = bounds.y;
 	        }
 	        
+	        case BottomLeft -> {
+	        	x = bounds.x;
+	            y = bounds.y + bounds.height - getHeight();
+	        }
+	        
+	        case BottomRight -> {
+	        	x = bounds.x + bounds.width - getWidth();
+	        	y = bounds.y + bounds.height - getHeight();
+	        }
 	        default -> throw new IllegalStateException();
 	    }
 	    setLocation(x, y);
