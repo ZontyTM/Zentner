@@ -47,15 +47,14 @@ public class Main
 
 	public static void main(String[] args)
 	{
-	    if (args != null)
-	    	arguments = args;
+	    arguments = args;
 		main = new Main();
 		main.run();
 	}
 
 	private void run()
 	{
-		if (arguments[0] != null && arguments[0].equals("-debug"))
+		if (arguments.length != 0 && arguments[0] != null && arguments[0].equals("-debug"))
 			DEBUG = true;
 		if (DEBUG == true)
 		{
